@@ -1,5 +1,4 @@
-#! /bin/sh
-set -e
+$ErrorActionPreference="Stop"
 
 # grub-mkconfig helper script.
 # Copyright (C) 2020  Free Software Foundation, Inc.
@@ -17,20 +16,20 @@ set -e
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-prefix="@prefix@"
-exec_prefix="@exec_prefix@"
-datarootdir="@datarootdir@"
+$prefix="@prefix@"
+$exec_prefix="@exec_prefix@"
+$datarootdir="@datarootdir@"
 
-export TEXTDOMAIN=@PACKAGE@
-export TEXTDOMAINDIR="@localedir@"
+$env:TEXTDOMAIN="@PACKAGE@"
+$env:TEXTDOMAINDIR="@localedir@"
 
-. "$pkgdatadir/grub-mkconfig_lib"
+. "$pkgdatadir/grub-mkconfig_lib.ps1"
 
-LABEL="UEFI Firmware Settings"
+$LABEL="UEFI Firmware Settings"
 
-gettext_printf "Adding boot menu entry for UEFI Firmware Settings ...\n" >&2
+Write-Error (& gettext_printf "Adding boot menu entry for UEFI Firmware Settings ...\n")
 
-cat << EOF
+Write-Output @"
 if [ "\$grub_platform" = "efi" ]; then
 	fwsetup --is-supported
 	if [ "\$?" = 0 ]; then
@@ -39,4 +38,4 @@ if [ "\$grub_platform" = "efi" ]; then
 		}
 	fi
 fi
-EOF
+"@

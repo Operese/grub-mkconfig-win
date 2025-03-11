@@ -14,337 +14,313 @@
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-prefix="@prefix@"
-exec_prefix="@exec_prefix@"
-datarootdir="@datarootdir@"
-datadir="@datadir@"
-bindir="@bindir@"
-sbindir="@sbindir@"
-if [ "x$pkgdatadir" = x ]; then
-    pkgdatadir="${datadir}/@PACKAGE@"
-fi
+$prefix = "@prefix@"
+$exec_prefix = "@exec_prefix@"
+$datarootdir = "@datarootdir@"
+$datadir = "@datadir@"
+$bindir = "@bindir@"
+$sbindir = "@sbindir@"
+if ("x$pkgdatadir" -eq "x") {
+  $pkgdatadir = "${datadir}/@PACKAGE@"
+}
 
-if test "x$grub_probe" = x; then
-  grub_probe="${sbindir}/@grub_probe@"
-fi
-if test "x$grub_file" = x; then
-  grub_file="${bindir}/@grub_file@"
-fi
-if test "x$grub_mkrelpath" = x; then
+if ("x$grub_probe" -eq "x") {
+  $grub_probe = "${sbindir}/@grub_probe@"
+}
+
+if ("x$grub_file" -eq "x") {
+  $grub_file = "${bindir}/@grub_file@"
+}
+if ("x$grub_mkrelpath" -eq "x") {
   grub_mkrelpath="${bindir}/@grub_mkrelpath@"
-fi
+}
 
-if command -v gettext >/dev/null; then
-  :
-else
-  gettext () {
-     printf "%s" "$@"
+if (-not (Get-Command gettext > $null)) {
+  function gettext {
+    "{0}" -f "$args"
   }
-fi
-
-grub_warn ()
-{
-  echo "$(gettext "Warning:")" "$@" >&2
 }
 
-make_system_path_relative_to_its_root ()
-{
-  "${grub_mkrelpath}" "$1"
+function grub_warn {
+  Write-Error "$(gettext "Warning:")" "$args"
 }
 
-is_path_readable_by_grub ()
-{
-  path="$1"
+function make_system_path_relative_to_its_root {
+  & "${grub_mkrelpath}" "${args[0]}"
+}
+
+function is_path_readable_by_grub {
+  path="${args[0]}"
 
   # abort if path doesn't exist
-  if test -e "$path" ; then : ;else
+  if (-not (Test-Path "$path" -PathType Leaf)) {
     return 1
-  fi
+  }
 
   # abort if file is in a filesystem we can't read
-  if "${grub_probe}" -t fs "$path" > /dev/null 2>&1 ; then : ; else
+  if (-not (& "${grub_probe}" -t fs "$path" > $null 2>&1)) {
     return 1
-  fi
+  }
 
   # ... or if we can't figure out the abstraction module, for example if
   # memberlist fails on an LVM volume group.
-  if abstractions="`"${grub_probe}" -t abstraction "$path"`" 2> /dev/null ; then 
-      :
-  else
+  $abstractions = (& ${grub_probe} -t abstraction "$path" 2> /dev/null)
+  if (-not $abstractions) {
     return 1
-  fi
+  }
 
-  if [ x$GRUB_ENABLE_CRYPTODISK = xy ]; then
-      return 0
-  fi
+  if ("x$GRUB_ENABLE_CRYPTODISK" -eq "xy" ) {
+    return 0
+  }
   
-  for abstraction in $abstractions; do
-      if [ "x$abstraction" = xcryptodisk ]; then
-	  return 1
-      fi
-  done
+  foreach ($abstraction in $abstractions -split '\s') {
+    if ("x$abstraction" -eq "xcryptodisk") {
+      return 1
+    }
+  }
 
   return 0
 }
 
-convert_system_path_to_grub_path ()
-{
-  path="$1"
+function convert_system_path_to_grub_path {
+  path="${args[0]}"
 
   grub_warn "convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead."
 
   # abort if GRUB can't access the path
-  if is_path_readable_by_grub "${path}" ; then : ; else
+  if (-not (is_path_readable_by_grub "${path}")) {
     return 1
-  fi
+  }
 
-  if drive="`"${grub_probe}" -t drive "$path"`" ; then : ; else
+  $drive = (& ${grub_probe} -t drive "$path")
+  if (-not $drive) {
     return 1
-  fi
+  }
 
-  if relative_path="`make_system_path_relative_to_its_root "$path"`" ; then : ; else
+  $relative_path = (make_system_path_relative_to_its_root "$path")
+  if (-not $relative_path) {
     return 1
-  fi
+  }
 
-  echo "${drive}${relative_path}"
+  Write-Output "${drive}${relative_path}"
 }
 
-save_default_entry ()
-{
-  if [ "x${GRUB_SAVEDEFAULT}" = "xtrue" ] ; then
-    cat << EOF
+function save_default_entry {
+  if ("x${GRUB_SAVEDEFAULT}" -eq "xtrue") {
+    Write-Output @"
 savedefault
-EOF
-  fi
+"@
+  }
 }
 
-prepare_grub_to_access_device ()
-{
-  old_ifs="$IFS"
-  IFS='
-'
-  partmap="`"${grub_probe}" --device $@ --target=partmap`"
-  for module in ${partmap} ; do
-    case "${module}" in
-      netbsd | openbsd)
-        echo "insmod part_bsd";;
-      *)
-        echo "insmod part_${module}";;
-    esac
-  done
+function prepare_grub_to_access_device {
+  $partmap = (& ${grub_probe} --device $args --target=partmap)
+  foreach ($module in $partmap -split "`n") {
+    switch ($module) {
+      "netbsd" {
+        Write-Output "insmod part_bsd"
+      }
+      "openbsd" {
+        Write-Output "insmod part_bsd"
+      }
+      default {
+        Write-Output "insmod part_${module}"
+      }
+    }
+  }
 
   # Abstraction modules aren't auto-loaded.
-  abstraction="`"${grub_probe}" --device $@ --target=abstraction`"
-  for module in ${abstraction} ; do
-    echo "insmod ${module}"
-  done
+  $abstraction = (& ${grub_probe} --device $args --target=abstraction)
+  foreach ($module in $abstraction -split "`n") {
+    Write-Output "insmod ${module}"
+  }
 
-  fs="`"${grub_probe}" --device $@ --target=fs`"
-  for module in ${fs} ; do
-    echo "insmod ${module}"
-  done
+  $fs = (& ${grub_probe} --device $args --target=fs)
+  foreach ($module in $fs -split "`n") {
+    Write-Output "insmod ${module}"
+  }
 
-  if [ x$GRUB_ENABLE_CRYPTODISK = xy ]; then
-      for uuid in `"${grub_probe}" --device $@ --target=cryptodisk_uuid`; do
-	  echo "cryptomount -u $uuid"
-      done
-  fi
+  if ( "x$GRUB_ENABLE_CRYPTODISK" -eq "xy") {
+    foreach ($uuid in (& ${grub_probe} --device $args --target=cryptodisk_uuid)) {
+      Write-Output "cryptomount -u $uuid"
+    }
+  }
 
   # If there's a filesystem UUID that GRUB is capable of identifying, use it;
   # otherwise set root as per value in device.map.
-  fs_hint="`"${grub_probe}" --device $@ --target=compatibility_hint`"
-  if [ "x$fs_hint" != x ]; then
-    echo "set root='$fs_hint'"
-  fi
-  if [ "x${GRUB_DISABLE_UUID}" != "xtrue" ] && fs_uuid="`"${grub_probe}" --device $@ --target=fs_uuid 2> /dev/null`" ; then
-    hints="`"${grub_probe}" --device $@ --target=hints_string 2> /dev/null`" || hints=
-    if [ "x$hints" != x ]; then
-      echo "if [ x\$feature_platform_search_hint = xy ]; then"
-      echo "  search --no-floppy --fs-uuid --set=root ${hints} ${fs_uuid}"
-      echo "else"
-      echo "  search --no-floppy --fs-uuid --set=root ${fs_uuid}"
-      echo "fi"
-    else
-      echo "search --no-floppy --fs-uuid --set=root ${fs_uuid}"
-    fi
-  fi
-  IFS="$old_ifs"
+  $fs_hint = (& ${grub_probe} --device $args --target=compatibility_hint)
+  if ("x$fs_hint" -ne "x") {
+    Write-Output "set root='$fs_hint'"
+  }
+  $fs_uuid = (& ${grub_probe} --device $args --target=fs_uuid 2> $null)
+  if ("x${GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
+    $hints=(& ${grub_probe} --device $args --target=hints_string 2> $null)
+    if ("x$hints" -ne "x") {
+      Write-Output "if [ x\$feature_platform_search_hint = xy ]; then"
+      Write-Output "  search --no-floppy --fs-uuid --set=root ${hints} ${fs_uuid}"
+      Write-Output "else"
+      Write-Output "  search --no-floppy --fs-uuid --set=root ${fs_uuid}"
+      Write-Output "fi"
+    }
+    else {
+      Write-Output "search --no-floppy --fs-uuid --set=root ${fs_uuid}"
+    }
+  }
 }
 
-grub_get_device_id ()
-{
-  old_ifs="$IFS"
-  IFS='
-'
-  device="$1"
-  if [ "x${GRUB_DISABLE_UUID}" != "xtrue" ] && fs_uuid="`"${grub_probe}" --device ${device} --target=fs_uuid 2> /dev/null`" ; then
-    echo "$fs_uuid";
-  else
-    echo $device |sed 's, ,_,g'
-  fi
-  IFS="$old_ifs"
+function grub_get_device_id {
+  $device = "${args[0]}"
+  $fs_uuid = (& ${grub_probe} --device ${device} --target=fs_uuid 2> $null)
+  if ("x${GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
+    Write-Output "$fs_uuid";
+  }
+  else {
+    Write-Output $device -replace ' ', '_'
+  }
 }
 
-grub_file_is_not_garbage ()
-{
-  if test -f "$1" ; then
-    case "$1" in
-      *.dpkg-*) return 1 ;; # debian dpkg
-      *.rpmsave|*.rpmnew) return 1 ;;
-      README*|*/README*)  return 1 ;; # documentation
-      *.sig) return 1 ;; # signatures
-    esac
-  else
+function grub_file_is_not_garbage {
+  if (Test-Path "${args[0]}" -PathType Leaf) {
+    switch -Wildcard ("${args[0]}") {
+      '*.dpkg-*' { return 1 } # debian dpkg
+      '*.rpmsave' { return 1 } 
+      '*.rpmnew' { return 1 }
+      'README*' { return 1 }
+      '*/README*' { return 1 } # documentation
+      '*.sig' { return 1 } # signatures
+    }
+  }
+  else {
     return 1
-  fi
+  }
   return 0
 }
 
-version_sort ()
-{
-  case $version_sort_sort_has_v in
-    yes)
-      LC_ALL=C sort -V "$@";;
-    no)
-      LC_ALL=C sort -n "$@";;
-    *)
-      if sort -V </dev/null > /dev/null 2>&1; then
-        version_sort_sort_has_v=yes
-	LC_ALL=C sort -V "$@"
-      else
-        version_sort_sort_has_v=no
-        LC_ALL=C sort -n "$@"
-      fi;;
-   esac
+function version_sort {
+  switch ($version_sort_sort_has_v) {
+    'yes' {
+      $args | Sort-Object { [Version]$_ }-Culture InvariantCulture
+    }
+    'no' {
+  
+      $args | Sort-Object { ([int]($_ -replace "\D.*", "")) } -Culture InvariantCulture
+    }
+    default { 
+      $version_sort_sort_has_v = "yes"
+      $args | Sort-Object { [Version]$_ }-Culture InvariantCulture
+    }
+  }
 }
 
 # Given an item as the first argument and a list as the subsequent arguments,
 # returns the list with the first argument moved to the front if it exists in
 # the list.
-grub_move_to_front ()
+function grub_move_to_front
 {
-  item="$1"
-  shift
+  $item="${args[0]}"
 
-  item_found=false
-  for i in "$@"; do
-    if [ "x$i" = "x$item" ]; then
-      item_found=true
-    fi
-  done
+  $item_found=$false
+  foreach($i in "${args[1..($args.Length - 1)]}") {
+  if("x$i" -eq "x$item") {
+  $item_found=$true
+  }
+  }
 
-  if [ "x$item_found" = xtrue ]; then
-    echo "$item"
-  fi
-  for i in "$@"; do
-    if [ "x$i" = "x$item" ]; then
-      continue
-    fi
-    echo "$i"
-  done
+  if("x$item_found" -eq "xtrue") {
+  Write-Output "$item"
+  }
+  foreach($i in "${args[1..($args.Length - 1)]}") {
+  if("x$i" -eq "x$item") {
+    continue
+  }
+  Write-Output "$i"
+  }
 }
 
 # One layer of quotation is eaten by "" and the second by sed; so this turns
 # ' into \'.
-grub_quote () {
-  sed "s/'/'\\\\''/g"
+function grub_quote {
+  $args[0] -replace "'", "'\\''"
 }
 
-gettext_quoted () {
-  gettext "$@" | grub_quote
+function gettext_quoted {
+  grub_quote (gettext "$args")
 }
 
 # Run the first argument through gettext, and then pass that and all
 # remaining arguments to printf.  This is a useful abbreviation and tends to
 # be easier to type.
-gettext_printf () {
-  gettext_printf_format="$1"
-  shift
-  printf "$(gettext "$gettext_printf_format")" "$@"
+function gettext_printf {
+  gettext_printf_format="$0"
+  printf "$(gettext "$gettext_printf_format")" "${args[1..($args.Length - 1)]}"
 }
 
-uses_abstraction () {
-  device="$1"
-  old_ifs="$IFS"
-  IFS='
-'
+function uses_abstraction {
+  $device="${args[0]}"
 
-  abstraction="`"${grub_probe}" --device ${device} --target=abstraction`"
-  for module in ${abstraction}; do
-    if test "x${module}" = "x$2"; then
-      IFS="$old_ifs"
+  $abstraction=(& ${grub_probe} --device ${device} --target=abstraction)
+  foreach($module in ${abstraction} -split "`n") {
+    if("x${module}" -eq "x${args[1]}") {
       return 0
-    fi
-  done
-  IFS="$old_ifs"
+    }
+  }
   return 1
 }
 
-print_option_help () {
-  if test x$print_option_help_wc = x; then
-      if wc -L  </dev/null > /dev/null 2>&1; then
-	  print_option_help_wc=-L
-      elif wc -m  </dev/null > /dev/null 2>&1; then
-	  print_option_help_wc=-m
-      else
-	  print_option_help_wc=-b
-      fi
-  fi
-  if test x$grub_have_fmt = x; then
-      if fmt -w 40  </dev/null > /dev/null 2>&1; then
-	  grub_have_fmt=y;
-      else
-	  grub_have_fmt=n;
-      fi
-  fi
-  print_option_help_lead="  $1"
-  print_option_help_lspace="$(echo "$print_option_help_lead" | wc $print_option_help_wc)"
-  print_option_help_fill="$((26 - print_option_help_lspace))"
+function print_option_help {
+  if("x$print_option_help_wc" -eq "x") {
+    $print_option_help_wc="-L"
+  }
+  if("x$grub_have_fmt" -eq "x") {
+  $grub_have_fmt="y";
+}
+  $print_option_help_lead="  ${args[0]}"
+  $print_option_help_lspace="$($print_option_help_lead -split "`n" | Measure-Object -Property Length -Maximum)"
+  $print_option_help_fill="$((26 - $print_option_help_lspace))"
   printf "%s" "$print_option_help_lead"
-  if test $print_option_help_fill -le 0; then
-      print_option_help_nl=y
-      echo
-  else
-      print_option_help_i=0;
-      while test $print_option_help_i -lt $print_option_help_fill; do
-      printf " "
-	  print_option_help_i=$((print_option_help_i+1))
-      done
-      print_option_help_nl=n
-  fi
-  if test x$grub_have_fmt = xy; then
-      print_option_help_split="$(echo "$2" | fmt -w 50)"
-  else
-      print_option_help_split="$2"
-  fi
-  if test x$print_option_help_nl = xy; then
-      echo "$print_option_help_split" | awk \
-	  '{ print "                          " $0; }'
-  else
-      echo "$print_option_help_split" | awk 'BEGIN   { n = 0 }
-  { if (n == 1) print "                          " $0; else print $0; n = 1 ; }'
-  fi
+  if($print_option_help_fill -le 0) {
+  $print_option_help_nl=y
+  Write-Output ""
+  }
+  else {
+  $print_option_help_i=0;
+  while($print_option_help_i -lt $print_option_help_fill) {
+  printf " "
+  $print_option_help_i=$(($print_option_help_i+1))
+  }
+  $print_option_help_nl="n"
+  }
+  if("x$grub_have_fmt" -eq "xy") {
+  $print_option_help_split="$("${args[1]}"  -split '(.{1,50})(?:\s+|$)' -join "`n")"
+  }
+  else {
+  $print_option_help_split="${args[1]}"
+  }
+  if("x$print_option_help_nl" -eq "xy") {
+    $print_option_help_split | ForEach-Object {
+      "                          $_"
+  }  
+  }
+  else {
+    $print_option_help_split | ForEach-Object -Begin { $n = 0 } -Process {
+      if ($n -eq 1) {
+          "                          $_"
+      } else {
+          $_
+      }
+      $n = 1
+  }
+  
+  }
 }
 
-grub_fmt () {
-  if test x$grub_have_fmt = x; then
-      if fmt -w 40 < /dev/null > /dev/null; then
-	  grub_have_fmt=y;
-      else
-	  grub_have_fmt=n;
-      fi
-  fi
-
-  if test x$grub_have_fmt = xy; then
-      fmt
-  else
-      cat
-  fi
+function grub_fmt {
+  $args[0] -split '(.{1,40})(?:\s+|$)' -join "`n"
 }
 
-grub_tab="	"
+$grub_tab="	"
 
-grub_add_tab () {
-  sed -e "s/^/$grub_tab/"
+function grub_add_tab {
+  $args[0] -replace "^", $grub_tab
 }
 
