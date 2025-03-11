@@ -23,7 +23,7 @@ $datarootdir="@datarootdir@"
 $env:TEXTDOMAIN="@PACKAGE@"
 $env:TEXTDOMAINDIR="@localedir@"
 
-. "$pkgdatadir/grub-mkconfig_lib.ps1"
+. "$env:pkgdatadir/grub-mkconfig_lib.ps1"
 
 if($PSVersionTable.PSVersion.Major -gt 5 -and -not $IsWindows) {
   exit 0

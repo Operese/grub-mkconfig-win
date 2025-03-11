@@ -24,39 +24,39 @@ $grub_lang = [System.Globalization.CultureInfo]::CurrentCulture.Name
 $env:TEXTDOMAIN = "@PACKAGE@"
 $env:TEXTDOMAINDIR = "@localedir@"
 
-. "$pkgdatadir/grub-mkconfig_lib.ps1"
+. "$env:pkgdatadir/grub-mkconfig_lib.ps1"
 
 # Do this as early as possible, since other commands might depend on it.
 # (e.g. the `loadfont' command might need lvm or raid modules)
-foreach ($i in ${GRUB_PRELOAD_MODULES}) {
+foreach ($i in ${env:GRUB_PRELOAD_MODULES}) {
   Write-Output "insmod $i"
 }
 
-if ("x${GRUB_DEFAULT}" -eq "x") { $GRUB_DEFAULT = 0 }
-if ("x${GRUB_DEFAULT}" -eq "xsaved") { $GRUB_DEFAULT = '${saved_entry}' }
-if ("x${GRUB_TIMEOUT}" -eq "x") { $GRUB_TIMEOUT = 5 }
-if ("x${GRUB_GFXMODE}" -eq "x") { $GRUB_GFXMODE = "auto" }
+if ("x${env:GRUB_DEFAULT}" -eq "x") { $env:GRUB_DEFAULT = 0 }
+if ("x${env:GRUB_DEFAULT}" -eq "xsaved") { $env:GRUB_DEFAULT = '${saved_entry}' }
+if ("x${env:GRUB_TIMEOUT}" -eq "x") { $env:GRUB_TIMEOUT = 5 }
+if ("x${env:GRUB_GFXMODE}" -eq "x") { $env:GRUB_GFXMODE = "auto" }
 
-if ("x${GRUB_DEFAULT_BUTTON}" -eq "x") { $GRUB_DEFAULT_BUTTON = "$GRUB_DEFAULT" }
-if ("x${GRUB_DEFAULT_BUTTON}" -eq "xsaved") { $GRUB_DEFAULT_BUTTON = '${saved_entry}' }
-if ("x${GRUB_TIMEOUT_BUTTON}" -eq "x") { $GRUB_TIMEOUT_BUTTON = "$GRUB_TIMEOUT" }
+if ("x${env:GRUB_DEFAULT_BUTTON}" -eq "x") { $env:GRUB_DEFAULT_BUTTON = "$env:GRUB_DEFAULT" }
+if ("x${env:GRUB_DEFAULT_BUTTON}" -eq "xsaved") { $env:GRUB_DEFAULT_BUTTON = '${saved_entry}' }
+if ("x${env:GRUB_TIMEOUT_BUTTON}" -eq "x") { $env:GRUB_TIMEOUT_BUTTON = "$env:GRUB_TIMEOUT" }
 
 Write-Output @"
 if [ -s \$prefix/grubenv ]; then
   load_env
 fi
 "@
-if ("x$GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
+if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
   Write-Output @"
-if cmostest $GRUB_BUTTON_CMOS_ADDRESS ; then
-   set default="${GRUB_DEFAULT_BUTTON}"
+if cmostest $env:GRUB_BUTTON_CMOS_ADDRESS ; then
+   set default="${env:GRUB_DEFAULT_BUTTON}"
 elif [ "\${next_entry}" ] ; then
    set default="\${next_entry}"
    set next_entry=
    save_env next_entry
    set boot_once=true
 else
-   set default="${GRUB_DEFAULT}"
+   set default="${env:GRUB_DEFAULT}"
 fi
 "@
 }
@@ -68,7 +68,7 @@ if [ "\${next_entry}" ] ; then
    save_env next_entry
    set boot_once=true
 else
-   set default="${GRUB_DEFAULT}"
+   set default="${env:GRUB_DEFAULT}"
 fi
 "@
 }
@@ -99,9 +99,9 @@ function savedefault {
 
 function load_video {
 "@
-if ("${GRUB_VIDEO_BACKEND}" ) {
+if ("${env:GRUB_VIDEO_BACKEND}" ) {
   Write-Output @"
-  insmod ${GRUB_VIDEO_BACKEND}
+  insmod ${env:GRUB_VIDEO_BACKEND}
 "@
 }
 else {
@@ -129,7 +129,7 @@ Write-Output @"
 $serial = 0
 $gfxterm = 0
 
-foreach ($x in $GRUB_TERMINAL_INPUT, $GRUB_TERMINAL_OUTPUT) {
+foreach ($x in $env:GRUB_TERMINAL_INPUT, $env:GRUB_TERMINAL_OUTPUT) {
   if ("serial" -eq $x) {
     $serial = 1
   }
@@ -139,23 +139,23 @@ foreach ($x in $GRUB_TERMINAL_INPUT, $GRUB_TERMINAL_OUTPUT) {
 }
 
 if ("x$serial" -eq "x1") {
-  if ("x${GRUB_SERIAL_COMMAND}" -eq "x") {
+  if ("x${env:GRUB_SERIAL_COMMAND}" -eq "x") {
     grub_warn "$(gettext "Requested serial terminal but GRUB_SERIAL_COMMAND is unspecified. Default parameters will be used.")"
-    $GRUB_SERIAL_COMMAND = serial
+    $env:GRUB_SERIAL_COMMAND = serial
   }
-  Write-Output "${GRUB_SERIAL_COMMAND}"
+  Write-Output "${env:GRUB_SERIAL_COMMAND}"
 }
 
 if ("x$gfxterm" -eq "x1") {
-  if ("$GRUB_FONT") {
+  if ("$env:GRUB_FONT") {
     # Make the font accessible
-    prepare_grub_to_access_device `$ { grub_probe } --target=device "${GRUB_FONT}"`
+    prepare_grub_to_access_device `$ { grub_probe } --target=device "${env:GRUB_FONT}"`
       Write-Output @"
-if loadfont `make_system_path_relative_to_its_root "${GRUB_FONT}"` ; then
+if loadfont `make_system_path_relative_to_its_root "${env:GRUB_FONT}"` ; then
 "@
   }
   else {
-    :Dirs foreach ($dir in "${pkgdatadir}", (Write-Output '/@bootdirname@/@grubdirname@' | ForEach-Object { $_ -replace '/+', '/' }), "/usr/share/grub") {
+    :Dirs foreach ($dir in "${env:pkgdatadir}", (Write-Output '/@bootdirname@/@grubdirname@' | ForEach-Object { $_ -replace '/+', '/' }), "/usr/share/grub") {
       :Charsets foreach ($basename in "unicode", "unifont", "ascii") {
         $path = "${dir}/${basename}.pf2"
         if (is_path_readable_by_grub "${path}" > $null) {
@@ -190,7 +190,7 @@ if loadfont unicode ; then
   }
 
   Write-Output @"
-  set gfxmode=${GRUB_GFXMODE}
+  set gfxmode=${env:GRUB_GFXMODE}
   load_video
   insmod gfxterm
 "@
@@ -233,14 +233,14 @@ terminal_output $env:GRUB_TERMINAL_OUTPUT
 
 
 if ("x$gfxterm" -eq "x1") {
-  if ("x$GRUB_THEME" -ne "x" -and (Test-Path "$GRUB_THEME" -PathType Leaf) -and (is_path_readable_by_grub "$GRUB_THEME")) {
-    Write-Error "$(gettext_printf "Found theme: %s\n")" "$GRUB_THEME"
+  if ("x$env:GRUB_THEME" -ne "x" -and (Test-Path "$env:GRUB_THEME" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_THEME")) {
+    Write-Error "$(gettext_printf "Found theme: %s\n")" "$env:GRUB_THEME"
 
-    prepare_grub_to_access_device `$ { grub_probe } --target=device "$GRUB_THEME"`
+    prepare_grub_to_access_device `$ { grub_probe } --target=device "$env:GRUB_THEME"`
       Write-Output @"
 insmod gfxmenu
 "@
-    $themedir = (Split-Path -Parent "$GRUB_THEME")
+    $themedir = (Split-Path -Parent "$env:GRUB_THEME")
     Get-ChildItem -Path "$themedir"/*.pf2, "$themedir"/f/*.pf | ForEach-Object {
       if (Test-Path "$_" -PathType Leaf) {
         Write-Output @"
@@ -265,13 +265,13 @@ insmod tga
     }
 	    
     Write-Output @"
-set theme=(\$root)`make_system_path_relative_to_its_root $GRUB_THEME`
+set theme=(\$root)`make_system_path_relative_to_its_root $env:GRUB_THEME`
 export theme
 "@
   }
-  elseif ("x$GRUB_BACKGROUND" -ne "x" -and (Test-File "$GRUB_BACKGROUND" -PathType Leaf) -and (is_path_readable_by_grub "$GRUB_BACKGROUND")) {
-    Write-Error "$(gettext_printf "Found background: %s\n")" "$GRUB_BACKGROUND"
-    switch -Wildcard ($GRUB_BACKGROUND) {
+  elseif ("x$env:GRUB_BACKGROUND" -ne "x" -and (Test-File "$env:GRUB_BACKGROUND" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_BACKGROUND")) {
+    Write-Error "$(gettext_printf "Found background: %s\n")" "$env:GRUB_BACKGROUND"
+    switch -Wildcard ($env:GRUB_BACKGROUND) {
       '*.png' { $reader = 'png' }
       '*.tga' { $reader = 'tga' }
       '*.jpg' { $reader = 'jpeg' }
@@ -282,10 +282,10 @@ export theme
         exit 1
       }
     }
-    prepare_grub_to_access_device `$ { grub_probe } --target=device "$GRUB_BACKGROUND"`
+    prepare_grub_to_access_device `$ { grub_probe } --target=device "$env:GRUB_BACKGROUND"`
       Write-Output @"
 insmod $reader
-background_image -m stretch "`make_system_path_relative_to_its_root "$GRUB_BACKGROUND"`"
+background_image -m stretch "`make_system_path_relative_to_its_root "$env:GRUB_BACKGROUND"`"
 "@
   }
 }
@@ -301,7 +301,7 @@ function make_timeout {
     if ("x${args[1]}" -ne "x0") {
       grub_warn "$(gettext "Setting GRUB_TIMEOUT to a non-zero value when GRUB_HIDDEN_TIMEOUT is set is no longer supported.")"
     }
-    if ("x${GRUB_HIDDEN_TIMEOUT_QUIET}" -eq "xtrue") {
+    if ("x${env:GRUB_HIDDEN_TIMEOUT_QUIET}" -eq "xtrue") {
       $style = "hidden"
       $verbose = ""
     }
@@ -341,29 +341,29 @@ fi
   }
 }
 
-  if ("x$GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
+  if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
     Write-Output @"
-if cmostest $GRUB_BUTTON_CMOS_ADDRESS ; then
+if cmostest $env:GRUB_BUTTON_CMOS_ADDRESS ; then
 "@
-    make_timeout "${GRUB_HIDDEN_TIMEOUT_BUTTON}" "${GRUB_TIMEOUT_BUTTON}" "${GRUB_TIMEOUT_STYLE_BUTTON}"
+    make_timeout "${env:GRUB_HIDDEN_TIMEOUT_BUTTON}" "${env:GRUB_TIMEOUT_BUTTON}" "${env:GRUB_TIMEOUT_STYLE_BUTTON}"
     Write-Output "else"
-    make_timeout "${GRUB_HIDDEN_TIMEOUT}" "${GRUB_TIMEOUT}" "${GRUB_TIMEOUT_STYLE}"
+    make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
     Write-Output "fi"
     else
-    make_timeout "${GRUB_HIDDEN_TIMEOUT}" "${GRUB_TIMEOUT}" "${GRUB_TIMEOUT_STYLE}"
+    make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
   }
 
-  if ("x$GRUB_BUTTON_CMOS_ADDRESS" -ne "x" -and "x$GRUB_BUTTON_CMOS_CLEAN" -eq "xyes") {
+  if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x" -and "x$env:GRUB_BUTTON_CMOS_CLEAN" -eq "xyes") {
     Write-Output @"
-cmosclean $GRUB_BUTTON_CMOS_ADDRESS
+cmosclean $env:GRUB_BUTTON_CMOS_ADDRESS
 "@
   }
 
   # Play an initial tune
-  if ("x${GRUB_INIT_TUNE}" -ne "x") {
-    Write-Output "play ${GRUB_INIT_TUNE}"
+  if ("x${env:GRUB_INIT_TUNE}" -ne "x") {
+    Write-Output "play ${env:GRUB_INIT_TUNE}"
   }
 
-  if ("x${GRUB_BADRAM}" -ne "x") {
-    Write-Output "badram ${GRUB_BADRAM}"
+  if ("x${env:GRUB_BADRAM}" -ne "x") {
+    Write-Output "badram ${env:GRUB_BADRAM}"
   }

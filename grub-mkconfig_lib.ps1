@@ -20,8 +20,8 @@ $datarootdir = "@datarootdir@"
 $datadir = "@datadir@"
 $bindir = "@bindir@"
 $sbindir = "@sbindir@"
-if ("x$pkgdatadir" -eq "x") {
-  $pkgdatadir = "${datadir}/@PACKAGE@"
+if ("x$env:pkgdatadir" -eq "x") {
+  $env:pkgdatadir = "${datadir}/@PACKAGE@"
 }
 
 if ("x$grub_probe" -eq "x") {
@@ -69,7 +69,7 @@ function is_path_readable_by_grub {
     return 1
   }
 
-  if ("x$GRUB_ENABLE_CRYPTODISK" -eq "xy" ) {
+  if ("x$env:GRUB_ENABLE_CRYPTODISK" -eq "xy" ) {
     return 0
   }
   
@@ -106,7 +106,7 @@ function convert_system_path_to_grub_path {
 }
 
 function save_default_entry {
-  if ("x${GRUB_SAVEDEFAULT}" -eq "xtrue") {
+  if ("x${env:GRUB_SAVEDEFAULT}" -eq "xtrue") {
     Write-Output @"
 savedefault
 "@
@@ -140,7 +140,7 @@ function prepare_grub_to_access_device {
     Write-Output "insmod ${module}"
   }
 
-  if ( "x$GRUB_ENABLE_CRYPTODISK" -eq "xy") {
+  if ( "x$env:GRUB_ENABLE_CRYPTODISK" -eq "xy") {
     foreach ($uuid in (& ${grub_probe} --device $args --target=cryptodisk_uuid)) {
       Write-Output "cryptomount -u $uuid"
     }
@@ -153,7 +153,7 @@ function prepare_grub_to_access_device {
     Write-Output "set root='$fs_hint'"
   }
   $fs_uuid = (& ${grub_probe} --device $args --target=fs_uuid 2> $null)
-  if ("x${GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
+  if ("x${env:GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
     $hints=(& ${grub_probe} --device $args --target=hints_string 2> $null)
     if ("x$hints" -ne "x") {
       Write-Output "if [ x\$feature_platform_search_hint = xy ]; then"
@@ -171,7 +171,7 @@ function prepare_grub_to_access_device {
 function grub_get_device_id {
   $device = "${args[0]}"
   $fs_uuid = (& ${grub_probe} --device ${device} --target=fs_uuid 2> $null)
-  if ("x${GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
+  if ("x${env:GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
     Write-Output "$fs_uuid";
   }
   else {
