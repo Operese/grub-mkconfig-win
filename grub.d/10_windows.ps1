@@ -97,7 +97,7 @@ foreach($drv in $drives) {
     continue
   }
 
-  Write-Error (& gettext_printf "Found %s on %s (%s)\n" "$OS" "$drv" "$dev")
+  Write-Error -ErrorAction Continue (& gettext_printf "Found %s on %s (%s)\n" "$OS" "$drv" "$dev")
   Write-Output @"
 menuentry '$(Write-Output "$OS" | grub_quote)' \$menuentry_id_option '$osid-$(grub_get_device_id "${dev}")' {
 "@

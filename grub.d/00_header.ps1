@@ -157,7 +157,7 @@ if loadfont `make_system_path_relative_to_its_root "${env:GRUB_FONT}"` ; then
 "@
   }
   else {
-    :Dirs foreach ($dir in "${env:pkgdatadir}", (Write-Output "/$env:bootdirname/$env:grubdirname" | ForEach-Object { $_ -replace '/+', '/' }), "/usr/share/grub") {
+    :Dirs foreach ($dir in "${env:pkgdatadir}", ("/$env:bootdirname/$env:grubdirname" | ForEach-Object { $_ -replace '/+', '/' }), "/usr/share/grub") {
       :Charsets foreach ($basename in "unicode", "unifont", "ascii") {
         $path = "${dir}/${basename}.pf2"
         if (is_path_readable_by_grub "${path}" > $null) {
@@ -236,7 +236,7 @@ terminal_output $env:GRUB_TERMINAL_OUTPUT
 
 if ("x$gfxterm" -eq "x1") {
   if ("x$env:GRUB_THEME" -ne "x" -and (Test-Path "$env:GRUB_THEME" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_THEME")) {
-    Write-Error "$(gettext_printf "Found theme: %s\n")" "$env:GRUB_THEME"
+    Write-Error -ErrorAction Continue "$(gettext_printf "Found theme: %s\n")" "$env:GRUB_THEME"
 
     prepare_grub_to_access_device `$ { grub_probe } --target=device "$env:GRUB_THEME"`
       Write-Output @"
@@ -272,15 +272,15 @@ export theme
 "@
   }
   elseif ("x$env:GRUB_BACKGROUND" -ne "x" -and (Test-File "$env:GRUB_BACKGROUND" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_BACKGROUND")) {
-    Write-Error "$(gettext_printf "Found background: %s\n")" "$env:GRUB_BACKGROUND"
+    Write-Error -ErrorAction Continue "$(gettext_printf "Found background: %s\n")" "$env:GRUB_BACKGROUND"
     switch -Wildcard ($env:GRUB_BACKGROUND) {
       '*.png' { $reader = 'png' }
       '*.tga' { $reader = 'tga' }
       '*.jpg' { $reader = 'jpeg' }
       '*.jpeg' { $reader = 'jpeg' }
       default {
-        Write-Error "$(gettext "Unsupported image format")"
-        Write-Error ""
+        Write-Error -ErrorAction Continue "$(gettext "Unsupported image format")"
+        Write-Error -ErrorAction Continue ""
         exit 1
       }
     }
@@ -293,14 +293,14 @@ background_image -m stretch "`make_system_path_relative_to_its_root "$env:GRUB_B
 }
 
 function make_timeout {
-  if ("x${args[2]}" -ne "x") {
-    $timeout = "${args[1]}"
-    $style = "${args[2]}"
+  if ("x$($args[2])" -ne "x") {
+    $timeout = $args[1]
+    $style = $args[2]
   }
-  elseif ("x${args[0]}" -ne "x" -and "x${args[0]}" -ne "x0") {
+  elseif ("x$($args[0])" -ne "x" -and "x$($args[0])" -ne "x0") {
     # Handle the deprecated GRUB_HIDDEN_TIMEOUT scheme.
-    $timeout = "${args[0]}"
-    if ("x${args[1]}" -ne "x0") {
+    $timeout = $args[0]
+    if ("x$($args[1])" -ne "x0") {
       grub_warn "$(gettext "Setting GRUB_TIMEOUT to a non-zero value when GRUB_HIDDEN_TIMEOUT is set is no longer supported.")"
     }
     if ("x${env:GRUB_HIDDEN_TIMEOUT_QUIET}" -eq "xtrue") {
@@ -313,7 +313,7 @@ function make_timeout {
     }
     else {
       # No hidden timeout, so treat as GRUB_TIMEOUT_STYLE=menu
-      $timeout = "${args[1]}"
+      $timeout = $args[1]
       $style = "menu"
     }
     Write-Output @"

@@ -17,7 +17,7 @@ $ErrorActionPreference="Stop"
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-. "${env:pkgdatadir}/env-def.ps1"
+. "./env-def.ps1"
 
 $prefix="$env:prefix"
 $exec_prefix="$env:exec_prefix"
@@ -70,7 +70,7 @@ function argument {
   opt=$args[0]
 
   if(args.Length -eq 1) {
-      Write-Error (& gettext_printf "%s: option requires an argument -- \`%s'\n" "$self" "$opt")
+      Write-Error -ErrorAction Continue (& gettext_printf "%s: option requires an argument -- \`%s'\n" "$self" "$opt")
       exit 1
   }
   Write-Output $args[1]
@@ -108,7 +108,7 @@ for($i=0; $i -lt $args.Length; $i++) {
       $grub_cfg=($option -replace "^--output=", "")
     }
     "-*" {
-      Write-Error (& gettext_printf "Unrecognized option \`%s'\n" "$option")
+      Write-Error -ErrorAction Continue (& gettext_printf "Unrecognized option \`%s'\n" "$option")
       usage
       exit 1
     }
@@ -117,7 +117,7 @@ for($i=0; $i -lt $args.Length; $i++) {
 }
 
 if(-not (Test-Path $grub_probe -PathType Leaf)) {
-    Write-Error (& gettext_printf "%s: Not found.\n" "$1")
+    Write-Error -ErrorAction Continue (& gettext_printf "%s: Not found.\n" "$1")
     exit 1
 }
 
@@ -196,7 +196,7 @@ foreach($x in ${env:GRUB_TERMINAL_OUTPUT} -split " ") {
       $env:LANG="C"
     }
     default {
-      Write-Error "Invalid output terminal `"${env:GRUB_TERMINAL_OUTPUT}`""
+      Write-Error -ErrorAction Continue "Invalid output terminal `"${env:GRUB_TERMINAL_OUTPUT}`""
       exit 1
     }
   }
@@ -281,8 +281,8 @@ if("x${grub_cfg}" -ne "x") {
   $acl.AddAccessRule($rule)
   Set-Acl -Path "${grub_cfg}.new" -AclObject $acl
 }
-Write-Error (& gettext "Generating grub configuration file ...")
-Write-Error ""
+Write-Error -ErrorAction Continue (& gettext "Generating grub configuration file ...")
+Write-Error -ErrorAction Continue ""
 
 Write-Output @"
 #
@@ -301,7 +301,7 @@ foreach($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
     # emacsen backup files. FIXME: support other editors
     "*/#*#" {}
     default {
-      if(grub_file_is_not_garbage "$i" -and Test-Path "$i" -PathType Leaf) {
+      if((grub_file_is_not_garbage "$($i.FullName)") -eq 0 -and (Test-Path "$i" -PathType Leaf)) {
         Write-Output ""
         Write-Output "### BEGIN $i ###"
         & "$i"
@@ -314,11 +314,11 @@ foreach($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
 if("x${grub_cfg}" -ne "x") {
   if(-not (& ${grub_script_check} "${grub_cfg}.new")) {
     # TRANSLATORS: %s is replaced by filename
-    Write-Error (& gettext_printf "Syntax errors are detected in generated GRUB config file.
+    Write-Error -ErrorAction Continue (& gettext_printf "Syntax errors are detected in generated GRUB config file.
 Ensure that there are no errors in /etc/default/grub
 and /etc/grub.d/* files or please file a bug report with
 %s file attached." "${grub_cfg}.new")
-    Write-Error
+    Write-Error -ErrorAction Continue
     exit 1
   }
   else {
@@ -337,5 +337,5 @@ and /etc/grub.d/* files or please file a bug report with
   }
 }
 
-Write-Error (& gettext "done")
-Write-Error ""
+Write-Error -ErrorAction Continue (& gettext "done")
+Write-Error -ErrorAction Continue ""

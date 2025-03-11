@@ -31,28 +31,28 @@ if ("x$grub_probe" -eq "x") {
 }
 
 if ("x$grub_file" -eq "x") {
-  $grub_file = "${bindir}/@grub_file@"
+  $grub_file = "${bindir}/$env:grub_file"
 }
 if ("x$grub_mkrelpath" -eq "x") {
-  grub_mkrelpath="${bindir}/@grub_mkrelpath@"
+  $grub_mkrelpath="${bindir}/$env:grub_mkrelpath"
 }
 
-if (-not (Get-Command gettext > $null)) {
+if (-not (Get-Command gettext -ErrorAction SilentlyContinue > $null)) {
   function gettext {
     "{0}" -f "$args"
   }
 }
 
 function grub_warn {
-  Write-Error "$(gettext "Warning:")" "$args"
+  Write-Error -ErrorAction Continue "$(gettext "Warning:")" "$args"
 }
 
 function make_system_path_relative_to_its_root {
-  & "${grub_mkrelpath}" "${args[0]}"
+  & "${grub_mkrelpath}" $args[0]
 }
 
 function is_path_readable_by_grub {
-  path="${args[0]}"
+  path=$args[0]
 
   # abort if path doesn't exist
   if (-not (Test-Path "$path" -PathType Leaf)) {
@@ -85,7 +85,7 @@ function is_path_readable_by_grub {
 }
 
 function convert_system_path_to_grub_path {
-  path="${args[0]}"
+  path=$args[0]
 
   grub_warn "convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead."
 
@@ -171,7 +171,7 @@ function prepare_grub_to_access_device {
 }
 
 function grub_get_device_id {
-  $device = "${args[0]}"
+  $device = $args[0]
   $fs_uuid = (& ${grub_probe} --device ${device} --target=fs_uuid 2> $null)
   if ("x${env:GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
     Write-Output "$fs_uuid";
@@ -182,8 +182,8 @@ function grub_get_device_id {
 }
 
 function grub_file_is_not_garbage {
-  if (Test-Path "${args[0]}" -PathType Leaf) {
-    switch -Wildcard ("${args[0]}") {
+  if (Test-Path $args[0] -PathType Leaf) {
+    switch -Wildcard ($args[0]) {
       '*.dpkg-*' { return 1 } # debian dpkg
       '*.rpmsave' { return 1 } 
       '*.rpmnew' { return 1 }
@@ -219,10 +219,10 @@ function version_sort {
 # the list.
 function grub_move_to_front
 {
-  $item="${args[0]}"
+  $item=$args[0]
 
   $item_found=$false
-  foreach($i in "${args[1..($args.Length - 1)]}") {
+  foreach($i in $args[1..($args.Length - 1)]) {
   if("x$i" -eq "x$item") {
   $item_found=$true
   }
@@ -231,7 +231,7 @@ function grub_move_to_front
   if("x$item_found" -eq "xtrue") {
   Write-Output "$item"
   }
-  foreach($i in "${args[1..($args.Length - 1)]}") {
+  foreach($i in $args[1..($args.Length - 1)]) {
   if("x$i" -eq "x$item") {
     continue
   }
@@ -254,15 +254,15 @@ function gettext_quoted {
 # be easier to type.
 function gettext_printf {
   gettext_printf_format="$0"
-  printf "$(gettext "$gettext_printf_format")" "${args[1..($args.Length - 1)]}"
+  printf "$(gettext "$gettext_printf_format")" $args[1..($args.Length - 1)]
 }
 
 function uses_abstraction {
-  $device="${args[0]}"
+  $device=$args[0]
 
   $abstraction=(& ${grub_probe} --device ${device} --target=abstraction)
   foreach($module in ${abstraction} -split "`n") {
-    if("x${module}" -eq "x${args[1]}") {
+    if("x${module}" -eq "x$($args[1])") {
       return 0
     }
   }
@@ -276,7 +276,7 @@ function print_option_help {
   if("x$grub_have_fmt" -eq "x") {
   $grub_have_fmt="y";
 }
-  $print_option_help_lead="  ${args[0]}"
+  $print_option_help_lead="  $($args[0])"
   $print_option_help_lspace="$($print_option_help_lead -split "`n" | Measure-Object -Property Length -Maximum)"
   $print_option_help_fill="$((26 - $print_option_help_lspace))"
   printf "%s" "$print_option_help_lead"
@@ -293,10 +293,10 @@ function print_option_help {
   $print_option_help_nl="n"
   }
   if("x$grub_have_fmt" -eq "xy") {
-  $print_option_help_split="$("${args[1]}"  -split '(.{1,50})(?:\s+|$)' -join "`n")"
+  $print_option_help_split="$($args[1]  -split '(.{1,50})(?:\s+|$)' -join "`n")"
   }
   else {
-  $print_option_help_split="${args[1]}"
+  $print_option_help_split=$args[1]
   }
   if("x$print_option_help_nl" -eq "xy") {
     $print_option_help_split | ForEach-Object {
