@@ -16,12 +16,14 @@ $ErrorActionPreference="Stop"
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-$prefix="@prefix@"
-$exec_prefix="@exec_prefix@"
-$datarootdir="@datarootdir@"
+. "${env:pkgdatadir}/env-def.ps1"
 
-$env:TEXTDOMAIN="@PACKAGE@"
-$env:TEXTDOMAINDIR="@localedir@"
+$prefix="$env:prefix"
+$exec_prefix="$env:exec_prefix"
+$datarootdir="$env:datarootdir"
+
+$env:TEXTDOMAIN="$env:PACKAGE"
+$env:TEXTDOMAINDIR="$env:localedir"
 
 . "$env:pkgdatadir/grub-mkconfig_lib.ps1"
 

@@ -16,13 +16,15 @@ $ErrorActionPreference = "Stop"
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-$prefix = "@prefix@"
-$exec_prefix = "@exec_prefix@"
-$datarootdir = "@datarootdir@"
+. "${env:pkgdatadir}/env-def.ps1"
+
+$prefix = "$env:prefix"
+$exec_prefix = "$env:exec_prefix"
+$datarootdir = "$env:datarootdir"
 $grub_lang = [System.Globalization.CultureInfo]::CurrentCulture.Name
 
-$env:TEXTDOMAIN = "@PACKAGE@"
-$env:TEXTDOMAINDIR = "@localedir@"
+$env:TEXTDOMAIN = "$env:PACKAGE"
+$env:TEXTDOMAINDIR = "$env:localedir"
 
 . "$env:pkgdatadir/grub-mkconfig_lib.ps1"
 
@@ -155,7 +157,7 @@ if loadfont `make_system_path_relative_to_its_root "${env:GRUB_FONT}"` ; then
 "@
   }
   else {
-    :Dirs foreach ($dir in "${env:pkgdatadir}", (Write-Output '/@bootdirname@/@grubdirname@' | ForEach-Object { $_ -replace '/+', '/' }), "/usr/share/grub") {
+    :Dirs foreach ($dir in "${env:pkgdatadir}", (Write-Output "/$env:bootdirname/$env:grubdirname" | ForEach-Object { $_ -replace '/+', '/' }), "/usr/share/grub") {
       :Charsets foreach ($basename in "unicode", "unifont", "ascii") {
         $path = "${dir}/${basename}.pf2"
         if (is_path_readable_by_grub "${path}" > $null) {

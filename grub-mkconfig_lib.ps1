@@ -14,18 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-$prefix = "@prefix@"
-$exec_prefix = "@exec_prefix@"
-$datarootdir = "@datarootdir@"
-$datadir = "@datadir@"
-$bindir = "@bindir@"
-$sbindir = "@sbindir@"
+. "${env:pkgdatadir}/env-def.ps1"
+
+$prefix = "$env:prefix"
+$exec_prefix = "$env:exec_prefix"
+$datarootdir = "$env:datarootdir"
+$datadir = "$env:datadir"
+$bindir = "$env:bindir"
+$sbindir = "$env:sbindir"
 if ("x$env:pkgdatadir" -eq "x") {
-  $env:pkgdatadir = "${datadir}/@PACKAGE@"
+  $env:pkgdatadir = "${datadir}/$env:PACKAGE"
 }
 
 if ("x$grub_probe" -eq "x") {
-  $grub_probe = "${sbindir}/@grub_probe@"
+  $grub_probe = "${sbindir}/$env:grub_probe"
 }
 
 if ("x$grub_file" -eq "x") {

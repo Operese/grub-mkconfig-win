@@ -17,19 +17,21 @@ $ErrorActionPreference="Stop"
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-$prefix="@prefix@"
-$exec_prefix="@exec_prefix@"
-$datarootdir="@datarootdir@"
+. "${env:pkgdatadir}/env-def.ps1"
 
-$sbindir="@sbindir@"
-$bindir="@bindir@"
-$sysconfdir="@sysconfdir@"
-$PACKAGE_NAME="@PACKAGE_NAME@"
-$PACKAGE_VERSION="@PACKAGE_VERSION@"
-$host_os="@host_os@"
-$datadir="@datadir@"
+$prefix="$env:prefix"
+$exec_prefix="$env:exec_prefix"
+$datarootdir="$env:datarootdir"
+
+$sbindir="$env:sbindir"
+$bindir="$env:bindir"
+$sysconfdir="$env:sysconfdir"
+$PACKAGE_NAME="$env:PACKAGE_NAME"
+$PACKAGE_VERSION="$env:PACKAGE_VERSION"
+$host_os="$env:host_os"
+$datadir="$env:datadir"
 if("x$env:pkgdatadir" -eq "x") {
-    $env:pkgdatadir="${datadir}/@PACKAGE@"
+    $env:pkgdatadir="${datadir}/$env:PACKAGE"
 }
 
 $grub_cfg=""
@@ -37,13 +39,13 @@ $grub_mkconfig_dir="${sysconfdir}/grub.d"
 
 $self=$MyInvocation.MyCommand.Name
 
-$grub_probe="${sbindir}/@grub_probe@"
-$grub_file="${bindir}/@grub_file@"
-$grub_editenv="${bindir}/@grub_editenv@"
-$grub_script_check="${bindir}/@grub_script_check@"
+$grub_probe="${sbindir}/$env:grub_probe"
+$grub_file="${bindir}/$env:grub_file"
+$grub_editenv="${bindir}/$env:grub_editenv"
+$grub_script_check="${bindir}/$env:grub_script_check"
 
-$env:TEXTDOMAIN="@PACKAGE@"
-$env:TEXTDOMAINDIR="@localedir@"
+$env:TEXTDOMAIN="$env:PACKAGE"
+$env:TEXTDOMAINDIR="$env:localedir"
 
 . "${env:pkgdatadir}/grub-mkconfig_lib.ps1"
 
