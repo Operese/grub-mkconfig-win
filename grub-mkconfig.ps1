@@ -52,9 +52,8 @@ $env:TEXTDOMAINDIR="$env:localedir"
 # Usage: usage
 # Print the usage.
 function usage {
-    gettext_printf "Usage: %s [OPTION]\n" "$self"
+    gettext_printf "Usage: {0} [OPTION]`n" "$self"
     gettext "Generate a grub config file"
-    Write-Output ""
     Write-Output ""
     print_option_help "-o, --output=$(gettext FILE)" "$(gettext "output generated config to FILE [default=stdout]")"
     print_option_help "-h, --help" "$(gettext "print this message and exit")"
@@ -63,14 +62,13 @@ function usage {
     # Don't want to send people to the FSF for an unofficial port
     # Consider mentioning GitHub issues?
     # gettext "Report bugs to <bug-grub@gnu.org>."
-    Write-Output ""
 }
 
 function argument {
-  opt=$args[0]
+  $opt=$args[0]
 
-  if(args.Length -eq 1) {
-      Write-Error -ErrorAction Continue (& gettext_printf "%s: option requires an argument -- \`%s'\n" "$self" "$opt")
+  if($args.Length -eq 1) {
+      Write-Error -ErrorAction Continue (& gettext_printf "{0}: option requires an argument -- '{1}'`n" "$self" "$opt")
       exit 1
   }
   Write-Output $args[1]
@@ -97,18 +95,21 @@ for($i=0; $i -lt $args.Length; $i++) {
       exit 0
     }
     "-o" {
-      $grub_cfg=(argument $option $args[$i..($args.Length - 1)])
+      $grub_cfg=(argument $option $args[$($i + 1)..($args.Length - 1)])
       $i++
+      break
     }
     "--output" {
       $grub_cfg=(argument $option $args[$i..($args.Length - 1)])
       $i++
+      break
     }
     "--output=*" {
       $grub_cfg=($option -replace "^--output=", "")
+      break
     }
     "-*" {
-      Write-Error -ErrorAction Continue (& gettext_printf "Unrecognized option \`%s'\n" "$option")
+      Write-Error -ErrorAction Continue (& gettext_printf "Unrecognized option '{0}'`n" "$option")
       usage
       exit 1
     }
@@ -117,7 +118,7 @@ for($i=0; $i -lt $args.Length; $i++) {
 }
 
 if(-not (Test-Path $grub_probe -PathType Leaf)) {
-    Write-Error -ErrorAction Continue (& gettext_printf "%s: Not found.\n" "$1")
+    Write-Error -ErrorAction Continue (& gettext_printf "{0}: Not found.`n" $grub_probe)
     exit 1
 }
 
@@ -270,8 +271,8 @@ if("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
 # $env:GRUB_DISABLE_SUBMENU
 
 if("x${grub_cfg}" -ne "x") {
-  Remove-Item -Force "${grub_cfg}.new"
-  Start-Transcript -Path "${grub_cfg}.new"
+  Remove-Item -Force "${grub_cfg}.new" -ErrorAction SilentlyContinue
+  Start-Transcript -Path "${grub_cfg}.new" -UseMinimalHeader
   $acl = Get-Acl -Path "${grub_cfg}.new"
   $acl.SetAccessRuleProtection($true, $false)
   $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
@@ -301,10 +302,10 @@ foreach($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
     # emacsen backup files. FIXME: support other editors
     "*/#*#" {}
     default {
-      if((grub_file_is_not_garbage "$($i.FullName)") -eq 0 -and (Test-Path "$i" -PathType Leaf)) {
+      if((grub_file_is_not_garbage $i.FullName) -eq 0 -and (Test-Path $i.FullName -PathType Leaf)) {
         Write-Output ""
         Write-Output "### BEGIN $i ###"
-        & "$i"
+        & $i.FullName
         Write-Output "### END $i ###"
       }
     }
@@ -314,10 +315,12 @@ foreach($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
 if("x${grub_cfg}" -ne "x") {
   if(-not (& ${grub_script_check} "${grub_cfg}.new")) {
     # TRANSLATORS: %s is replaced by filename
-    Write-Error -ErrorAction Continue (& gettext_printf "Syntax errors are detected in generated GRUB config file.
+    Write-Error -ErrorAction Continue (& gettext_printf @"
+    Syntax errors are detected in generated GRUB config file.
 Ensure that there are no errors in /etc/default/grub
 and /etc/grub.d/* files or please file a bug report with
-%s file attached." "${grub_cfg}.new")
+{0} file attached." "${grub_cfg}.new
+"@)
     Write-Error -ErrorAction Continue
     exit 1
   }

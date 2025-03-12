@@ -43,6 +43,12 @@ if (-not (Get-Command gettext -ErrorAction SilentlyContinue > $null)) {
   }
 }
 
+if (-not (Get-Command printf -ErrorAction SilentlyContinue > $null)) {
+  function printf {
+    [Console]::Write($args[0] -f $args[1..$($args.Length - 1)])
+  }
+}
+
 function grub_warn {
   Write-Error -ErrorAction Continue "$(gettext "Warning:")" "$args"
 }
@@ -52,7 +58,7 @@ function make_system_path_relative_to_its_root {
 }
 
 function is_path_readable_by_grub {
-  path=$args[0]
+  $path=$args[0]
 
   # abort if path doesn't exist
   if (-not (Test-Path "$path" -PathType Leaf)) {
@@ -85,7 +91,7 @@ function is_path_readable_by_grub {
 }
 
 function convert_system_path_to_grub_path {
-  path=$args[0]
+  $path=$args[0]
 
   grub_warn "convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead."
 
@@ -253,8 +259,9 @@ function gettext_quoted {
 # remaining arguments to printf.  This is a useful abbreviation and tends to
 # be easier to type.
 function gettext_printf {
-  gettext_printf_format="$0"
-  printf "$(gettext "$gettext_printf_format")" $args[1..($args.Length - 1)]
+  $gettext_printf_format=$args[0]
+  $gettext_printf_args=$args[1..($args.Length - 1)]
+  printf "$(gettext "$gettext_printf_format")" @gettext_printf_args
 }
 
 function uses_abstraction {
@@ -277,9 +284,9 @@ function print_option_help {
   $grub_have_fmt="y";
 }
   $print_option_help_lead="  $($args[0])"
-  $print_option_help_lspace="$($print_option_help_lead -split "`n" | Measure-Object -Property Length -Maximum)"
+  $print_option_help_lspace="$(($print_option_help_lead -split "`n" | Measure-Object -Property Length -Maximum).Maximum)"
   $print_option_help_fill="$((26 - $print_option_help_lspace))"
-  printf "%s" "$print_option_help_lead"
+  printf "{0}" "$print_option_help_lead"
   if($print_option_help_fill -le 0) {
   $print_option_help_nl=y
   Write-Output ""
@@ -288,12 +295,12 @@ function print_option_help {
   $print_option_help_i=0;
   while($print_option_help_i -lt $print_option_help_fill) {
   printf " "
-  $print_option_help_i=$(($print_option_help_i+1))
+  $print_option_help_i++
   }
   $print_option_help_nl="n"
   }
   if("x$grub_have_fmt" -eq "xy") {
-  $print_option_help_split="$($args[1]  -split '(.{1,50})(?:\s+|$)' -join "`n")"
+  $print_option_help_split="$(($args[1]  -split '(.{1,50})(?:\s+|$)' -join "`n").Trim())"
   }
   else {
   $print_option_help_split=$args[1]
@@ -317,7 +324,7 @@ function print_option_help {
 }
 
 function grub_fmt {
-  $args[0] -split '(.{1,40})(?:\s+|$)' -join "`n"
+  ($args[0] -split '(.{1,40})(?:\s+|$)' -join "`n").Trim()
 }
 
 $grub_tab="	"

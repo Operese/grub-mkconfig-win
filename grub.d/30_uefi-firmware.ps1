@@ -29,7 +29,7 @@ $env:TEXTDOMAINDIR="$env:localedir"
 
 $LABEL="UEFI Firmware Settings"
 
-Write-Error -ErrorAction Continue (& gettext_printf "Adding boot menu entry for UEFI Firmware Settings ...\n")
+Write-Error -ErrorAction Continue (& gettext_printf "Adding boot menu entry for UEFI Firmware Settings ...`n")
 
 Write-Output @"
 if [ "\$grub_platform" = "efi" ]; then
