@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+$InformationPreference="Continue"
 
 # grub-mkconfig helper script.
 # Copyright (C) 2006,2007,2008,2009,2010  Free Software Foundation, Inc.
@@ -236,7 +237,7 @@ terminal_output $env:GRUB_TERMINAL_OUTPUT
 
 if ("x$gfxterm" -eq "x1") {
   if ("x$env:GRUB_THEME" -ne "x" -and (Test-Path "$env:GRUB_THEME" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_THEME")) {
-    Write-Error -ErrorAction Continue "$(gettext_printf "Found theme: {0}`n")" "$env:GRUB_THEME"
+    gettext_printf "Found theme: {0}`n" "$env:GRUB_THEME"
 
     prepare_grub_to_access_device `$ { grub_probe } --target=device "$env:GRUB_THEME"`
       Write-Output @"
@@ -272,15 +273,15 @@ export theme
 "@
   }
   elseif ("x$env:GRUB_BACKGROUND" -ne "x" -and (Test-File "$env:GRUB_BACKGROUND" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_BACKGROUND")) {
-    Write-Error -ErrorAction Continue "$(gettext_printf "Found background: {0}`n")" "$env:GRUB_BACKGROUND"
+    gettext_printf "Found background: {0}`n" "$env:GRUB_BACKGROUND"
     switch -Wildcard ($env:GRUB_BACKGROUND) {
       '*.png' { $reader = 'png' }
       '*.tga' { $reader = 'tga' }
       '*.jpg' { $reader = 'jpeg' }
       '*.jpeg' { $reader = 'jpeg' }
       default {
-        Write-Error -ErrorAction Continue "$(gettext "Unsupported image format")"
-        Write-Error -ErrorAction Continue ""
+        Write-Information "$(gettext "Unsupported image format")"
+        Write-Information ""
         exit 1
       }
     }

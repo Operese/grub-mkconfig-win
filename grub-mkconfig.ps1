@@ -1,5 +1,6 @@
 #Requires -RunAsAdministrator
 $ErrorActionPreference="Stop"
+$InformationPreference="Continue"
 
 # Generate grub.cfg by inspecting /boot contents.
 # Copyright (C) 2006,2007,2008,2009,2010 Free Software Foundation, Inc.
@@ -68,7 +69,7 @@ function argument {
   $opt=$args[0]
 
   if($args.Length -eq 1) {
-      Write-Error -ErrorAction Continue (& gettext_printf "{0}: option requires an argument -- '{1}'`n" "$self" "$opt")
+      gettext_printf "{0}: option requires an argument -- '{1}'`n" "$self" "$opt"
       exit 1
   }
   Write-Output $args[1]
@@ -109,7 +110,7 @@ for($i=0; $i -lt $args.Length; $i++) {
       break
     }
     "-*" {
-      Write-Error -ErrorAction Continue (& gettext_printf "Unrecognized option '{0}'`n" "$option")
+      gettext_printf "Unrecognized option '{0}'`n" "$option"
       usage
       exit 1
     }
@@ -118,7 +119,7 @@ for($i=0; $i -lt $args.Length; $i++) {
 }
 
 if(-not (Test-Path $grub_probe -PathType Leaf)) {
-    Write-Error -ErrorAction Continue (& gettext_printf "{0}: Not found.`n" $grub_probe)
+    gettext_printf "{0}: Not found.`n" $grub_probe
     exit 1
 }
 
@@ -197,7 +198,7 @@ foreach($x in ${env:GRUB_TERMINAL_OUTPUT} -split " ") {
       $env:LANG="C"
     }
     default {
-      Write-Error -ErrorAction Continue "Invalid output terminal `"${env:GRUB_TERMINAL_OUTPUT}`""
+      Write-Information "Invalid output terminal `"${env:GRUB_TERMINAL_OUTPUT}`""
       exit 1
     }
   }
@@ -272,6 +273,36 @@ if("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
 
 if("x${grub_cfg}" -ne "x") {
   Remove-Item -Force "${grub_cfg}.new" -ErrorAction SilentlyContinue
+  (& $MyInvocation.MyCommand.Path) > ${grub_cfg.new}
+  if(-not (& ${grub_script_check} "${grub_cfg}.new")) {
+    # TRANSLATORS: {0} is replaced by filename
+    gettext_printf @"
+    Syntax errors are detected in generated GRUB config file.
+Ensure that there are no errors in /etc/default/grub
+and /etc/grub.d/* files or please file a bug report with
+{0} file attached." "${grub_cfg}.new
+"@
+    Write-Information
+    exit 1
+  }
+  else {
+    # none of the children aborted with error, install the new grub.cfg
+    Copy-Item -Path "${grub_cfg}.new" -Destination ${grub_cfg}
+    $acl = Get-Acl -Path "${grub_cfg}"
+    $acl.SetAccessRuleProtection($true, $false)
+    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+    $fileSystemRights = [System.Security.AccessControl.FileSystemRights]::FullControl
+    $type = [System.Security.AccessControl.AccessControlType]::Allow
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($identity, $fileSystemRights, $type)
+    $acl.AddAccessRule($rule)
+    Set-Acl -Path "${grub_cfg}" -AclObject $acl
+    Remove-Item -Force "${grub_cfg}.new"
+    Stop-Transcript
+  }
+  Write-Information (& gettext "done")
+  Write-Information ""
+  Write-Information
+  exit 0
   Start-Transcript -Path "${grub_cfg}.new" -UseMinimalHeader
   $acl = Get-Acl -Path "${grub_cfg}.new"
   $acl.SetAccessRuleProtection($true, $false)
@@ -282,8 +313,8 @@ if("x${grub_cfg}" -ne "x") {
   $acl.AddAccessRule($rule)
   Set-Acl -Path "${grub_cfg}.new" -AclObject $acl
 }
-Write-Error -ErrorAction Continue (& gettext "Generating grub configuration file ...")
-Write-Error -ErrorAction Continue ""
+Write-Information (& gettext "Generating grub configuration file ...")
+Write-Information ""
 
 Write-Output @"
 #
@@ -312,33 +343,5 @@ foreach($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
   }
 }
 
-if("x${grub_cfg}" -ne "x") {
-  if(-not (& ${grub_script_check} "${grub_cfg}.new")) {
-    # TRANSLATORS: %s is replaced by filename
-    Write-Error -ErrorAction Continue (& gettext_printf @"
-    Syntax errors are detected in generated GRUB config file.
-Ensure that there are no errors in /etc/default/grub
-and /etc/grub.d/* files or please file a bug report with
-{0} file attached." "${grub_cfg}.new
-"@)
-    Write-Error -ErrorAction Continue
-    exit 1
-  }
-  else {
-    # none of the children aborted with error, install the new grub.cfg
-    Copy-Item -Path "${grub_cfg}.new" -Destination ${grub_cfg}
-    $acl = Get-Acl -Path "${grub_cfg}"
-    $acl.SetAccessRuleProtection($true, $false)
-    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-    $fileSystemRights = [System.Security.AccessControl.FileSystemRights]::FullControl
-    $type = [System.Security.AccessControl.AccessControlType]::Allow
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($identity, $fileSystemRights, $type)
-    $acl.AddAccessRule($rule)
-    Set-Acl -Path "${grub_cfg}" -AclObject $acl
-    Remove-Item -Force "${grub_cfg}.new"
-    Stop-Transcript
-  }
-}
-
-Write-Error -ErrorAction Continue (& gettext "done")
-Write-Error -ErrorAction Continue ""
+Write-Information (& gettext "done")
+Write-Information ""

@@ -50,7 +50,7 @@ if (-not (Get-Command printf -ErrorAction SilentlyContinue > $null)) {
 }
 
 function grub_warn {
-  Write-Error -ErrorAction Continue "$(gettext "Warning:")" "$args"
+  Write-Information "$(gettext "Warning:")" "$args"
 }
 
 function make_system_path_relative_to_its_root {

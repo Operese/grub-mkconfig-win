@@ -1,4 +1,5 @@
 $ErrorActionPreference="Stop"
+$InformationPreference="Continue"
 
 # grub-mkconfig helper script.
 # Copyright (C) 2008,2009,2010  Free Software Foundation, Inc.
@@ -97,7 +98,7 @@ foreach($drv in $drives) {
     continue
   }
 
-  Write-Error -ErrorAction Continue (& gettext_printf "Found {0} on {1} ({2})`n" "$OS" "$drv" "$dev")
+  gettext_printf "Found {0} on {1} ({2})`n" "$OS" "$drv" "$dev"
   Write-Output @"
 menuentry '$(Write-Output "$OS" | grub_quote)' \$menuentry_id_option '$osid-$(grub_get_device_id "${dev}")' {
 "@
