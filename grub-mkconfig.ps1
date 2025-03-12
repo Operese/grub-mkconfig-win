@@ -96,12 +96,14 @@ for($i=0; $i -lt $args.Length; $i++) {
       exit 0
     }
     "-o" {
-      $grub_cfg=(argument $option $args[$($i + 1)..($args.Length - 1)])
+      $argument_args=$args[$($i + 1)..($args.Length - 1)]
+      $grub_cfg=$(argument $option @argument_args)
       $i++
       break
     }
     "--output" {
-      $grub_cfg=(argument $option $args[$i..($args.Length - 1)])
+      $argument_args=$args[$($i + 1)..($args.Length - 1)]
+      $grub_cfg=$(argument $option @argument_args)
       $i++
       break
     }
@@ -207,7 +209,11 @@ foreach($x in ${env:GRUB_TERMINAL_OUTPUT} -split " ") {
 $env:GRUB_ACTUAL_DEFAULT="$env:GRUB_DEFAULT"
 
 if("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
-  $env:GRUB_ACTUAL_DEFAULT=(& ${grub_editenv} - list ) -replace "`nsaved_entry=",""
+  $env:GRUB_ACTUAL_DEFAULT=(& ${grub_editenv} - list  | ForEach-Object {
+    if($_ -match "^saved_entry=") {
+      $_ -replace "^saved_entry=",""
+    }
+  })
 }
 
 
@@ -272,49 +278,39 @@ if("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
 # $env:GRUB_DISABLE_SUBMENU
 
 if("x${grub_cfg}" -ne "x") {
-  Remove-Item -Force "${grub_cfg}.new" -ErrorAction SilentlyContinue
-  (& $MyInvocation.MyCommand.Path) > ${grub_cfg.new}
-  if(-not (& ${grub_script_check} "${grub_cfg}.new")) {
+  $cfg_new = (& $MyInvocation.MyCommand.Path)
+  ($cfg_new | & ${grub_script_check}) > $null
+  if(-not $?) {
+    $cfg_new > "${grub_cfg}.new"
     # TRANSLATORS: {0} is replaced by filename
     gettext_printf @"
     Syntax errors are detected in generated GRUB config file.
 Ensure that there are no errors in /etc/default/grub
 and /etc/grub.d/* files or please file a bug report with
-{0} file attached." "${grub_cfg}.new
-"@
-    Write-Information
+{0} file attached."
+"@  "${grub_cfg}.new"
+    Write-Information ""
     exit 1
   }
   else {
     # none of the children aborted with error, install the new grub.cfg
-    Copy-Item -Path "${grub_cfg}.new" -Destination ${grub_cfg}
-    $acl = Get-Acl -Path "${grub_cfg}"
+    New-Item -ItemType File -Name "${grub_cfg}" -ErrorAction SilentlyContinue > $null
+    $acl = New-Object System.Security.AccessControl.FileSecurity
     $acl.SetAccessRuleProtection($true, $false)
-    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-    $fileSystemRights = [System.Security.AccessControl.FileSystemRights]::FullControl
-    $type = [System.Security.AccessControl.AccessControlType]::Allow
-    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($identity, $fileSystemRights, $type)
-    $acl.AddAccessRule($rule)
+    $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule("SYSTEM", "FullControl", "Allow")
+    $currentUserRule = New-Object System.Security.AccessControl.FileSystemAccessRule([System.Security.Principal.WindowsIdentity]::GetCurrent().Name, "FullControl", "Allow")
+    $acl.AddAccessRule($adminRule)
+    $acl.AddAccessRule($currentUserRule)
+    $owner = New-Object System.Security.Principal.NTAccount("SYSTEM")
+    $acl.SetOwner($owner)
     Set-Acl -Path "${grub_cfg}" -AclObject $acl
-    Remove-Item -Force "${grub_cfg}.new"
-    Stop-Transcript
+    Set-Content -Path "${grub_cfg}" -Force $cfg_new
+    $acl.RemoveAccessRule($currentUserRule) > $null
+    Set-Acl -Path "${grub_cfg}" -AclObject $acl
   }
-  Write-Information (& gettext "done")
-  Write-Information ""
-  Write-Information
   exit 0
-  Start-Transcript -Path "${grub_cfg}.new" -UseMinimalHeader
-  $acl = Get-Acl -Path "${grub_cfg}.new"
-  $acl.SetAccessRuleProtection($true, $false)
-  $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-  $fileSystemRights = [System.Security.AccessControl.FileSystemRights]::FullControl
-  $type = [System.Security.AccessControl.AccessControlType]::Allow
-  $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($identity, $fileSystemRights, $type)
-  $acl.AddAccessRule($rule)
-  Set-Acl -Path "${grub_cfg}.new" -AclObject $acl
 }
 Write-Information (& gettext "Generating grub configuration file ...")
-Write-Information ""
 
 Write-Output @"
 #
@@ -344,4 +340,3 @@ foreach($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
 }
 
 Write-Information (& gettext "done")
-Write-Information ""

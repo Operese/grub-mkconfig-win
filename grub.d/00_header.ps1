@@ -45,7 +45,7 @@ if ("x${env:GRUB_DEFAULT_BUTTON}" -eq "xsaved") { $env:GRUB_DEFAULT_BUTTON = '${
 if ("x${env:GRUB_TIMEOUT_BUTTON}" -eq "x") { $env:GRUB_TIMEOUT_BUTTON = "$env:GRUB_TIMEOUT" }
 
 Write-Output @"
-if [ -s \$prefix/grubenv ]; then
+if [ -s `$prefix/grubenv ]; then
   load_env
 fi
 "@
@@ -53,8 +53,8 @@ if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
   Write-Output @"
 if cmostest $env:GRUB_BUTTON_CMOS_ADDRESS ; then
    set default="${env:GRUB_DEFAULT_BUTTON}"
-elif [ "\${next_entry}" ] ; then
-   set default="\${next_entry}"
+elif [ "`${next_entry}" ] ; then
+   set default="`${next_entry}"
    set next_entry=
    save_env next_entry
    set boot_once=true
@@ -65,8 +65,8 @@ fi
 }
 else {
   Write-Output @"
-if [ "\${next_entry}" ] ; then
-   set default="\${next_entry}"
+if [ "`${next_entry}" ] ; then
+   set default="`${next_entry}"
    set next_entry=
    save_env next_entry
    set boot_once=true
@@ -77,7 +77,7 @@ fi
 }
 Write-Output @"
 
-if [ x"\${feature_menuentry_id}" = xy ]; then
+if [ x"`${feature_menuentry_id}" = xy ]; then
   menuentry_id_option="--id"
 else
   menuentry_id_option=""
@@ -85,8 +85,8 @@ fi
 
 export menuentry_id_option
 
-if [ "\${prev_saved_entry}" ]; then
-  set saved_entry="\${prev_saved_entry}"
+if [ "`${prev_saved_entry}" ]; then
+  set saved_entry="`${prev_saved_entry}"
   save_env saved_entry
   set prev_saved_entry=
   save_env prev_saved_entry
@@ -94,8 +94,8 @@ if [ "\${prev_saved_entry}" ]; then
 fi
 
 function savedefault {
-  if [ -z "\${boot_once}" ]; then
-    saved_entry="\${chosen}"
+  if [ -z "`${boot_once}" ]; then
+    saved_entry="`${chosen}"
     save_env saved_entry
   fi
 }
@@ -111,7 +111,7 @@ else {
   # If all_video.mod isn't available load all modules available
   # with versions prior to introduction of all_video.mod
   Write-Output @"
-  if [ x\$feature_all_video_module = xy ]; then
+  if [ x`$feature_all_video_module = xy ]; then
     insmod all_video
   else
     insmod efi_gop
@@ -154,14 +154,14 @@ if ("x$gfxterm" -eq "x1") {
     # Make the font accessible
     prepare_grub_to_access_device `$ { grub_probe } --target=device "${env:GRUB_FONT}"`
       Write-Output @"
-if loadfont `make_system_path_relative_to_its_root "${env:GRUB_FONT}"` ; then
+if loadfont $(make_system_path_relative_to_its_root "${env:GRUB_FONT}") ; then
 "@
   }
   else {
     :Dirs foreach ($dir in "${env:pkgdatadir}", ("/$env:bootdirname/$env:grubdirname" | ForEach-Object { $_ -replace '/+', '/' }), "/usr/share/grub") {
       :Charsets foreach ($basename in "unicode", "unifont", "ascii") {
         $path = "${dir}/${basename}.pf2"
-        if (is_path_readable_by_grub "${path}" > $null) {
+        if (is_path_readable_by_grub "${path}" > $null -eq 0) {
           $font_path = "${path}"
         }
         else {
@@ -172,17 +172,17 @@ if loadfont `make_system_path_relative_to_its_root "${env:GRUB_FONT}"` ; then
     }
     if ("${font_path}") {
       Write-Output @"
-if [ x\$feature_default_font_path = xy ] ; then
+if [ x`$feature_default_font_path = xy ] ; then
    font=unicode
 else
 "@
       # Make the font accessible
       prepare_grub_to_access_device `$ { grub_probe } --target=device "${font_path}"`
         Write-Output @"
-    font="`make_system_path_relative_to_its_root "${font_path}"`"
+    font="$(make_system_path_relative_to_its_root "${font_path}")"
         }
 
-if loadfont \$font ; then
+if loadfont `$font ; then
 "@
     }
     else {
@@ -201,7 +201,7 @@ if loadfont unicode ; then
   # Gettext variables and module
   if ("x${grub_lang}" -ne "xC" -and "x${LANG}" -ne "xPOSIX" -and "x${LANG}" -ne "x") {
     Write-Output @"
-  set locale_dir=\$prefix/locale
+  set locale_dir=`$prefix/locale
   set lang=${grub_lang}
   insmod gettext
 "@
@@ -236,7 +236,7 @@ terminal_output $env:GRUB_TERMINAL_OUTPUT
 
 
 if ("x$gfxterm" -eq "x1") {
-  if ("x$env:GRUB_THEME" -ne "x" -and (Test-Path "$env:GRUB_THEME" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_THEME")) {
+  if ("x$env:GRUB_THEME" -ne "x" -and (Test-Path "$env:GRUB_THEME" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_THEME") -eq 0) {
     gettext_printf "Found theme: {0}`n" "$env:GRUB_THEME"
 
     prepare_grub_to_access_device `$ { grub_probe } --target=device "$env:GRUB_THEME"`
@@ -247,7 +247,7 @@ insmod gfxmenu
     Get-ChildItem -Path "$themedir"/*.pf2, "$themedir"/f/*.pf | ForEach-Object {
       if (Test-Path "$_" -PathType Leaf) {
         Write-Output @"
-loadfont (\$root)`make_system_path_relative_to_its_root $_`
+loadfont (`$root)$(make_system_path_relative_to_its_root $_)
 "@
       }
     }
@@ -268,11 +268,11 @@ insmod tga
     }
 	    
     Write-Output @"
-set theme=(\$root)`make_system_path_relative_to_its_root $env:GRUB_THEME`
+set theme=(`$root)$(make_system_path_relative_to_its_root $env:GRUB_THEME)
 export theme
 "@
   }
-  elseif ("x$env:GRUB_BACKGROUND" -ne "x" -and (Test-File "$env:GRUB_BACKGROUND" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_BACKGROUND")) {
+  elseif ("x$env:GRUB_BACKGROUND" -ne "x" -and (Test-File "$env:GRUB_BACKGROUND" -PathType Leaf) -and (is_path_readable_by_grub "$env:GRUB_BACKGROUND") -eq 0) {
     gettext_printf "Found background: {0}`n" "$env:GRUB_BACKGROUND"
     switch -Wildcard ($env:GRUB_BACKGROUND) {
       '*.png' { $reader = 'png' }
@@ -288,7 +288,7 @@ export theme
     prepare_grub_to_access_device `$ { grub_probe } --target=device "$env:GRUB_BACKGROUND"`
       Write-Output @"
 insmod $reader
-background_image -m stretch "`make_system_path_relative_to_its_root "$env:GRUB_BACKGROUND"`"
+background_image -m stretch "$(make_system_path_relative_to_its_root "$env:GRUB_BACKGROUND")"
 "@
   }
 }
@@ -318,7 +318,7 @@ function make_timeout {
       $style = "menu"
     }
     Write-Output @"
-if [ x\$feature_timeout_style = xy ] ; then
+if [ x`$feature_timeout_style = xy ] ; then
   set timeout_style=${style}
   set timeout=${timeout}
 "@

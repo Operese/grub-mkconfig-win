@@ -66,13 +66,14 @@ function is_path_readable_by_grub {
   }
 
   # abort if file is in a filesystem we can't read
-  if (-not (& "${grub_probe}" -t fs "$path" > $null 2>&1)) {
+  & "${grub_probe}" -t fs "$path" > $null 2>&1
+  if (-not $?) {
     return 1
   }
 
   # ... or if we can't figure out the abstraction module, for example if
   # memberlist fails on an LVM volume group.
-  $abstractions = (& ${grub_probe} -t abstraction "$path" 2> /dev/null)
+  $abstractions = (& ${grub_probe} -t abstraction "$path" 2> $null)
   if (-not $abstractions) {
     return 1
   }
@@ -96,7 +97,7 @@ function convert_system_path_to_grub_path {
   grub_warn "convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead."
 
   # abort if GRUB can't access the path
-  if (-not (is_path_readable_by_grub "${path}")) {
+  if (is_path_readable_by_grub "${path}" -ne 0) {
     return 1
   }
 
@@ -164,7 +165,7 @@ function prepare_grub_to_access_device {
   if ("x${env:GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
     $hints=(& ${grub_probe} --device $args --target=hints_string 2> $null)
     if ("x$hints" -ne "x") {
-      Write-Output "if [ x\$feature_platform_search_hint = xy ]; then"
+      Write-Output "if [ x`$feature_platform_search_hint = xy ]; then"
       Write-Output "  search --no-floppy --fs-uuid --set=root ${hints} ${fs_uuid}"
       Write-Output "else"
       Write-Output "  search --no-floppy --fs-uuid --set=root ${fs_uuid}"
@@ -194,7 +195,7 @@ function grub_file_is_not_garbage {
       '*.rpmsave' { return 1 } 
       '*.rpmnew' { return 1 }
       'README*' { return 1 }
-      '*/README*' { return 1 } # documentation
+      '*\README*' { return 1 } # documentation
       '*.sig' { return 1 } # signatures
     }
   }

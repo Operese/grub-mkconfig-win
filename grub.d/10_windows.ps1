@@ -33,60 +33,22 @@ if($PSVersionTable.PSVersion.Major -gt 5 -and -not $IsWindows) {
 }
 
 # Try C: even if current system is on other partition.
-switch -Regex ($SYSTEMDRIVE) {
+switch -Regex ($env:SystemDrive) {
   '^[Cc]:$' { $drives = 'C:' }
-  '^[D-Zd-z]:$' { $drives = "C: $SYSTEMDRIVE" }
+  '^[D-Zd-z]:$' { $drives = "C: $env:SystemDrive" }
   default { exit 0 }
 }
 
+foreach($drv in $drives -split " ") {
 
-function get_os_name_from_boot_ini
-{
-  # Fail if no or more than one partition.
-  if((Get-CimInstance -Class "MSFT_Partition" -Namespace "root\Microsoft\Windows\Storage").Length -ne 1) {
-    return ""
-  }
-
-  # Search 'default=PARTITION'
-  $get_os_name_from_boot_ini_part=((Get-Content $args[0] | Select-String -Pattern "^default=") -replace "^default=", "" -replace "\\", "/" -replace "[ $grub_tab\r]*$", "" | Select-Object -First 1)
-  if(-not $get_os_name_from_boot_ini_part) {
-    return ""
-  }
-
-  # Search 'PARTITION="NAME" ...'
-  Get-Content $args[0] -replace "\", "/" -match "^$get_os_name_from_boot_ini_part=`"\([^`"]*\).*`".*$'"
-  $get_os_name_from_boot_ini_name=${matches[1]}
-  if(-not $get_os_name_from_boot_ini_name) {
-    return ""
-  }
-
-  Write-Output "$get_os_name_from_boot_ini_name"
-}
-
-
-
-foreach($drv in $drives) {
-
-  if(-not (Test-Path "$drv" -PathType Leaf)) {
+  if(-not (Test-Path "$drv")) {
     continue
   }
 
-  $needmap=
-  $osid=
-
   # Check for Vista bootmgr.
-  if((Test-Path "$drv/bootmgr" -PathType Leaf) -and (Test-Path "$drv/boot/bcd" -PathType Leaf)) {
-    $OS="$(gettext "Windows Vista/7 (loader)")"
+  if(Test-Path "$drv/Windows/System32/winload.exe" -PathType Leaf) {
+    $OS="$(gettext "Windows NT (loader)")"
     $osid="bootmgr"
-  }
-  # Check for NTLDR.
-  elseif((Test-Path "$drv/ntldr" -PathType Leaf) -and (Test-Path "$drv/ntdetect.com" -PathType Leaf) -and (Test-Path "$drv/boot.ini" -PathType Leaf)) {
-    $OS=(& get_os_name_from_boot_ini "$drv/boot.ini")
-    if($OS -eq "") {
-      $OS="$(gettext "Windows NT/2000/XP (loader)")"
-    }
-    $osid="ntldr"
-    $needmap="t"
   }
   else {
     continue
@@ -100,16 +62,11 @@ foreach($drv in $drives) {
 
   gettext_printf "Found {0} on {1} ({2})`n" "$OS" "$drv" "$dev"
   Write-Output @"
-menuentry '$(Write-Output "$OS" | grub_quote)' \$menuentry_id_option '$osid-$(grub_get_device_id "${dev}")' {
+menuentry '$(grub_quote "$OS")' --class windows --class os `$menuentry_id_option '$osid-$(grub_get_device_id "${dev}")' {
 "@
 
   Write-Output (& save_default_entry | ForEach-Object { "$grub_tab$_" })
   Write-Output (& prepare_grub_to_access_device "$dev" | ForEach-Object { "$grub_tab$_" })
-  if($needmap) {
-    Write-Output @"
-	drivemap -s (hd0) \$root
-"@
-  }
   Write-Output @"
 	chainloader +1
 }
