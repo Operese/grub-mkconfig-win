@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-. "${env:pkgdatadir}/env-def.ps1"
+. "$PSScriptRoot/env-def.ps1"
 
 $prefix = "$env:prefix"
 $exec_prefix = "$env:exec_prefix"

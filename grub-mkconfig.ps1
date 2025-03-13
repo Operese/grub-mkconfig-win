@@ -18,7 +18,7 @@ $InformationPreference="Continue"
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-. "./env-def.ps1"
+. "$PSScriptRoot/env-def.ps1"
 
 $prefix="$env:prefix"
 $exec_prefix="$env:exec_prefix"
@@ -278,7 +278,7 @@ if("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
 # $env:GRUB_DISABLE_SUBMENU
 
 if("x${grub_cfg}" -ne "x") {
-  $cfg_new = (& $MyInvocation.MyCommand.Path)
+  $cfg_new = (& $MyInvocation.MyCommand.Path | Out-String)
   ($cfg_new | & ${grub_script_check}) > $null
   if(-not $?) {
     $cfg_new > "${grub_cfg}.new"
