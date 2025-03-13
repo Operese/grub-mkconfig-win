@@ -1,5 +1,5 @@
-$ErrorActionPreference="Stop"
-$InformationPreference="Continue"
+$ErrorActionPreference = "Stop"
+$InformationPreference = "Continue"
 
 # grub-mkconfig helper script.
 # Copyright (C) 2008,2009,2010  Free Software Foundation, Inc.
@@ -19,16 +19,16 @@ $InformationPreference="Continue"
 
 . "${env:pkgdatadir}/env-def.ps1"
 
-$prefix="$env:prefix"
-$exec_prefix="$env:exec_prefix"
-$datarootdir="$env:datarootdir"
+$prefix = "$env:prefix"
+$exec_prefix = "$env:exec_prefix"
+$datarootdir = "$env:datarootdir"
 
-$env:TEXTDOMAIN="$env:PACKAGE"
-$env:TEXTDOMAINDIR="$env:localedir"
+$env:TEXTDOMAIN = "$env:PACKAGE"
+$env:TEXTDOMAINDIR = "$env:localedir"
 
 . "$env:pkgdatadir/grub-mkconfig_lib.ps1"
 
-if($PSVersionTable.PSVersion.Major -gt 5 -and -not $IsWindows) {
+if ($PSVersionTable.PSVersion.Major -gt 5 -and -not $IsWindows) {
   exit 0
 }
 
@@ -39,24 +39,24 @@ switch -Regex ($env:SystemDrive) {
   default { exit 0 }
 }
 
-foreach($drv in $drives -split " ") {
+foreach ($drv in $drives -split " ") {
 
-  if(-not (Test-Path "$drv")) {
+  if (-not (Test-Path "$drv")) {
     continue
   }
 
   # Check for Vista bootmgr.
-  if(Test-Path "$drv/Windows/System32/winload.exe" -PathType Leaf) {
-    $OS="$(gettext "Windows NT (loader)")"
-    $osid="bootmgr"
+  if (Test-Path "$drv/Windows/System32/winload.exe" -PathType Leaf) {
+    $OS = "$(gettext "Windows NT (loader)")"
+    $osid = "bootmgr"
   }
   else {
     continue
   }
 
   # Get boot device.
-  $dev=(& ${grub_probe} -t device "\\.\$drv" 2> $null)
-  if(-not $dev) {
+  $dev = (& ${grub_probe} -t device "\\.\$drv" 2> $null)
+  if (-not $dev) {
     continue
   }
 

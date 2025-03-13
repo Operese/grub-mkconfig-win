@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$InformationPreference="Continue"
+$InformationPreference = "Continue"
 
 # grub-mkconfig helper script.
 # Copyright (C) 2006,2007,2008,2009,2010  Free Software Foundation, Inc.
@@ -344,29 +344,29 @@ fi
   }
 }
 
-  if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
-    Write-Output @"
+if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
+  Write-Output @"
 if cmostest $env:GRUB_BUTTON_CMOS_ADDRESS ; then
 "@
-    make_timeout "${env:GRUB_HIDDEN_TIMEOUT_BUTTON}" "${env:GRUB_TIMEOUT_BUTTON}" "${env:GRUB_TIMEOUT_STYLE_BUTTON}"
-    Write-Output "else"
-    make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
-    Write-Output "fi"
-    else
-    make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
-  }
+  make_timeout "${env:GRUB_HIDDEN_TIMEOUT_BUTTON}" "${env:GRUB_TIMEOUT_BUTTON}" "${env:GRUB_TIMEOUT_STYLE_BUTTON}"
+  Write-Output "else"
+  make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
+  Write-Output "fi"
+  else
+  make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
+}
 
-  if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x" -and "x$env:GRUB_BUTTON_CMOS_CLEAN" -eq "xyes") {
-    Write-Output @"
+if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x" -and "x$env:GRUB_BUTTON_CMOS_CLEAN" -eq "xyes") {
+  Write-Output @"
 cmosclean $env:GRUB_BUTTON_CMOS_ADDRESS
 "@
-  }
+}
 
-  # Play an initial tune
-  if ("x${env:GRUB_INIT_TUNE}" -ne "x") {
-    Write-Output "play ${env:GRUB_INIT_TUNE}"
-  }
+# Play an initial tune
+if ("x${env:GRUB_INIT_TUNE}" -ne "x") {
+  Write-Output "play ${env:GRUB_INIT_TUNE}"
+}
 
-  if ("x${env:GRUB_BADRAM}" -ne "x") {
-    Write-Output "badram ${env:GRUB_BADRAM}"
-  }
+if ("x${env:GRUB_BADRAM}" -ne "x") {
+  Write-Output "badram ${env:GRUB_BADRAM}"
+}

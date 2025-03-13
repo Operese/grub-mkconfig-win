@@ -1,6 +1,6 @@
 #Requires -RunAsAdministrator
-$ErrorActionPreference="Stop"
-$InformationPreference="Continue"
+$ErrorActionPreference = "Stop"
+$InformationPreference = "Continue"
 
 # Generate grub.cfg by inspecting /boot contents.
 # Copyright (C) 2006,2007,2008,2009,2010 Free Software Foundation, Inc.
@@ -20,63 +20,63 @@ $InformationPreference="Continue"
 
 . "$PSScriptRoot/env-def.ps1"
 
-$prefix="$env:prefix"
-$exec_prefix="$env:exec_prefix"
-$datarootdir="$env:datarootdir"
+$prefix = "$env:prefix"
+$exec_prefix = "$env:exec_prefix"
+$datarootdir = "$env:datarootdir"
 
-$sbindir="$env:sbindir"
-$bindir="$env:bindir"
-$sysconfdir="$env:sysconfdir"
-$PACKAGE_NAME="$env:PACKAGE_NAME"
-$PACKAGE_VERSION="$env:PACKAGE_VERSION"
-$host_os="$env:host_os"
-$datadir="$env:datadir"
-if("x$env:pkgdatadir" -eq "x") {
-    $env:pkgdatadir="${datadir}/$env:PACKAGE"
+$sbindir = "$env:sbindir"
+$bindir = "$env:bindir"
+$sysconfdir = "$env:sysconfdir"
+$PACKAGE_NAME = "$env:PACKAGE_NAME"
+$PACKAGE_VERSION = "$env:PACKAGE_VERSION"
+$host_os = "$env:host_os"
+$datadir = "$env:datadir"
+if ("x$env:pkgdatadir" -eq "x") {
+  $env:pkgdatadir = "${datadir}/$env:PACKAGE"
 }
 
-$grub_cfg=""
-$grub_mkconfig_dir="${sysconfdir}/grub.d"
+$grub_cfg = ""
+$grub_mkconfig_dir = "${sysconfdir}/grub.d"
 
-$self=$MyInvocation.MyCommand.Name
+$self = $MyInvocation.MyCommand.Name
 
-$grub_probe="${sbindir}/$env:grub_probe"
-$grub_file="${bindir}/$env:grub_file"
-$grub_editenv="${bindir}/$env:grub_editenv"
-$grub_script_check="${bindir}/$env:grub_script_check"
+$grub_probe = "${sbindir}/$env:grub_probe"
+$grub_file = "${bindir}/$env:grub_file"
+$grub_editenv = "${bindir}/$env:grub_editenv"
+$grub_script_check = "${bindir}/$env:grub_script_check"
 
-$env:TEXTDOMAIN="$env:PACKAGE"
-$env:TEXTDOMAINDIR="$env:localedir"
+$env:TEXTDOMAIN = "$env:PACKAGE"
+$env:TEXTDOMAINDIR = "$env:localedir"
 
 . "${env:pkgdatadir}/grub-mkconfig_lib.ps1"
 
 # Usage: usage
 # Print the usage.
 function usage {
-    gettext_printf "Usage: {0} [OPTION]`n" "$self"
-    gettext "Generate a grub config file"
-    Write-Output ""
-    print_option_help "-o, --output=$(gettext FILE)" "$(gettext "output generated config to FILE [default=stdout]")"
-    print_option_help "-h, --help" "$(gettext "print this message and exit")"
-    print_option_help "-V, --version" "$(gettext "print the version information and exit")"
-    Write-Output ""
-    # Don't want to send people to the FSF for an unofficial port
-    # Consider mentioning GitHub issues?
-    # gettext "Report bugs to <bug-grub@gnu.org>."
+  gettext_printf "Usage: {0} [OPTION]`n" "$self"
+  gettext "Generate a grub config file"
+  Write-Output ""
+  print_option_help "-o, --output=$(gettext FILE)" "$(gettext "output generated config to FILE [default=stdout]")"
+  print_option_help "-h, --help" "$(gettext "print this message and exit")"
+  print_option_help "-V, --version" "$(gettext "print the version information and exit")"
+  Write-Output ""
+  # Don't want to send people to the FSF for an unofficial port
+  # Consider mentioning GitHub issues?
+  # gettext "Report bugs to <bug-grub@gnu.org>."
 }
 
 function argument {
-  $opt=$args[0]
+  $opt = $args[0]
 
-  if($args.Length -eq 1) {
-      gettext_printf "{0}: option requires an argument -- '{1}'`n" "$self" "$opt"
-      exit 1
+  if ($args.Length -eq 1) {
+    gettext_printf "{0}: option requires an argument -- '{1}'`n" "$self" "$opt"
+    exit 1
   }
   Write-Output $args[1]
 }
 
 # Check the arguments.
-for($i=0; $i -lt $args.Length; $i++) {
+for ($i = 0; $i -lt $args.Length; $i++) {
   $option = $args[$i]
   switch -Wildcard ($option) {
     "-h" {
@@ -96,19 +96,19 @@ for($i=0; $i -lt $args.Length; $i++) {
       exit 0
     }
     "-o" {
-      $argument_args=$args[$($i + 1)..($args.Length - 1)]
-      $grub_cfg=$(argument $option @argument_args)
+      $argument_args = $args[$($i + 1)..($args.Length - 1)]
+      $grub_cfg = $(argument $option @argument_args)
       $i++
       break
     }
     "--output" {
-      $argument_args=$args[$($i + 1)..($args.Length - 1)]
-      $grub_cfg=$(argument $option @argument_args)
+      $argument_args = $args[$($i + 1)..($args.Length - 1)]
+      $grub_cfg = $(argument $option @argument_args)
       $i++
       break
     }
     "--output=*" {
-      $grub_cfg=($option -replace "^--output=", "")
+      $grub_cfg = ($option -replace "^--output=", "")
       break
     }
     "-*" {
@@ -120,84 +120,84 @@ for($i=0; $i -lt $args.Length; $i++) {
   }
 }
 
-if(-not (Test-Path $grub_probe -PathType Leaf)) {
-    gettext_printf "{0}: Not found.`n" $grub_probe
-    exit 1
+if (-not (Test-Path $grub_probe -PathType Leaf)) {
+  gettext_printf "{0}: Not found.`n" $grub_probe
+  exit 1
 }
 
 # Device containing our userland.  Typically used for root= parameter.
-$env:GRUB_DEVICE=(& ${grub_probe} --target=device "\\.\$env:SystemDrive")
-$env:GRUB_DEVICE_UUID=(& ${grub_probe} --device ${env:GRUB_DEVICE} --target=fs_uuid 2> $null)
-if(-not $env:GRUB_DEVICE_UUID) {
-  $env:GRUB_DEVICE_UUID=$true
+$env:GRUB_DEVICE = (& ${grub_probe} --target=device "\\.\$env:SystemDrive")
+$env:GRUB_DEVICE_UUID = (& ${grub_probe} --device ${env:GRUB_DEVICE} --target=fs_uuid 2> $null)
+if (-not $env:GRUB_DEVICE_UUID) {
+  $env:GRUB_DEVICE_UUID = $true
 }
-$env:GRUB_DEVICE_PARTUUID=(& ${grub_probe} --device ${env:GRUB_DEVICE} --target=partuuid 2> $null)
-if(-not $env:GRUB_DEVICE_PARTUUID) {
-  $env:GRUB_DEVICE_PARTUUID=$true
+$env:GRUB_DEVICE_PARTUUID = (& ${grub_probe} --device ${env:GRUB_DEVICE} --target=partuuid 2> $null)
+if (-not $env:GRUB_DEVICE_PARTUUID) {
+  $env:GRUB_DEVICE_PARTUUID = $true
 }
 
 # Device containing our /boot partition.  Usually the same as GRUB_DEVICE.
-$env:GRUB_DEVICE_BOOT=(& ${grub_probe} --target=device "\\.\$env:SystemDrive")
-$env:GRUB_DEVICE_BOOT_UUID=(& ${grub_probe} --device ${env:GRUB_DEVICE_BOOT} --target=fs_uuid 2> $null)
-if(-not $env:GRUB_DEVICE_BOOT_UUID) {
-  $env:GRUB_DEVICE_BOOT_UUID=$true
+$env:GRUB_DEVICE_BOOT = (& ${grub_probe} --target=device "\\.\$env:SystemDrive")
+$env:GRUB_DEVICE_BOOT_UUID = (& ${grub_probe} --device ${env:GRUB_DEVICE_BOOT} --target=fs_uuid 2> $null)
+if (-not $env:GRUB_DEVICE_BOOT_UUID) {
+  $env:GRUB_DEVICE_BOOT_UUID = $true
 }
 
 # Disable os-prober by default due to security reasons.
-$env:GRUB_DISABLE_OS_PROBER="true"
+$env:GRUB_DISABLE_OS_PROBER = "true"
 
 # Filesystem for the device containing our userland.  Used for stuff like
 # choosing Hurd filesystem module.
-$env:GRUB_FS=(& ${grub_probe} --device ${env:GRUB_DEVICE} --target=fs 2> $null)
-if(-not $env:GRUB_FS) {
-  $env:GRUB_FS="ntfs"
+$env:GRUB_FS = (& ${grub_probe} --device ${env:GRUB_DEVICE} --target=fs 2> $null)
+if (-not $env:GRUB_FS) {
+  $env:GRUB_FS = "ntfs"
 }
 
 # Provide a default set of stock linux early initrd images.
 # Define here so the list can be modified in the sourced config file.
-if("x${env:GRUB_EARLY_INITRD_LINUX_STOCK}" -eq "x") {
-	$env:GRUB_EARLY_INITRD_LINUX_STOCK="intel-uc.img intel-ucode.img amd-uc.img amd-ucode.img early_ucode.cpio microcode.cpio"
+if ("x${env:GRUB_EARLY_INITRD_LINUX_STOCK}" -eq "x") {
+  $env:GRUB_EARLY_INITRD_LINUX_STOCK = "intel-uc.img intel-ucode.img amd-uc.img amd-ucode.img early_ucode.cpio microcode.cpio"
 }
 
-if(Test-Path "${sysconfdir}/default/grub" -PathType Leaf) {
+if (Test-Path "${sysconfdir}/default/grub" -PathType Leaf) {
   . "${sysconfdir}/default/grub"
 }
 
-if("x${env:GRUB_DISABLE_UUID}" -eq "xtrue") {
-  if(-not "${env:GRUB_DISABLE_LINUX_UUID}") {
-    $env:GRUB_DISABLE_LINUX_UUID="true"
+if ("x${env:GRUB_DISABLE_UUID}" -eq "xtrue") {
+  if (-not "${env:GRUB_DISABLE_LINUX_UUID}") {
+    $env:GRUB_DISABLE_LINUX_UUID = "true"
   }
-  if(-not "${env:GRUB_DISABLE_LINUX_PARTUUID}") {
-    $env:GRUB_DISABLE_LINUX_PARTUUID="true"
+  if (-not "${env:GRUB_DISABLE_LINUX_PARTUUID}") {
+    $env:GRUB_DISABLE_LINUX_PARTUUID = "true"
   }
 }
 
 # XXX: should this be deprecated at some point?
-if("x${env:GRUB_TERMINAL}" -ne "x") {
-  $env:GRUB_TERMINAL_INPUT="${env:GRUB_TERMINAL}"
-  $env:GRUB_TERMINAL_OUTPUT="${env:GRUB_TERMINAL}"
+if ("x${env:GRUB_TERMINAL}" -ne "x") {
+  $env:GRUB_TERMINAL_INPUT = "${env:GRUB_TERMINAL}"
+  $env:GRUB_TERMINAL_OUTPUT = "${env:GRUB_TERMINAL}"
 }
 
-$termoutdefault=0
-if("x${env:GRUB_TERMINAL_OUTPUT}" -eq "x") {
-    $env:GRUB_TERMINAL_OUTPUT="gfxterm";
-    $termoutdefault=1;
+$termoutdefault = 0
+if ("x${env:GRUB_TERMINAL_OUTPUT}" -eq "x") {
+  $env:GRUB_TERMINAL_OUTPUT = "gfxterm";
+  $termoutdefault = 1;
 }
 
-foreach($x in ${env:GRUB_TERMINAL_OUTPUT} -split " ") {
+foreach ($x in ${env:GRUB_TERMINAL_OUTPUT} -split " ") {
   switch ("x$x") {
     "xgfxterm" {}
     "xconsole" {
-      $env:LANG="C"
+      $env:LANG = "C"
     }
     "xserial" {
-      $env:LANG="C"
+      $env:LANG = "C"
     }
     "xofconsole" {
-      $env:LANG="C"
+      $env:LANG = "C"
     }
     "xvga_text" {
-      $env:LANG="C"
+      $env:LANG = "C"
     }
     default {
       Write-Information "Invalid output terminal `"${env:GRUB_TERMINAL_OUTPUT}`""
@@ -206,14 +206,14 @@ foreach($x in ${env:GRUB_TERMINAL_OUTPUT} -split " ") {
   }
 }
 
-$env:GRUB_ACTUAL_DEFAULT="$env:GRUB_DEFAULT"
+$env:GRUB_ACTUAL_DEFAULT = "$env:GRUB_DEFAULT"
 
-if("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
-  $env:GRUB_ACTUAL_DEFAULT=(& ${grub_editenv} - list  | ForEach-Object {
-    if($_ -match "^saved_entry=") {
-      $_ -replace "^saved_entry=",""
-    }
-  })
+if ("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
+  $env:GRUB_ACTUAL_DEFAULT = (& ${grub_editenv} - list  | ForEach-Object {
+      if ($_ -match "^saved_entry=") {
+        $_ -replace "^saved_entry=", ""
+      }
+    })
 }
 
 
@@ -277,10 +277,10 @@ if("x${env:GRUB_ACTUAL_DEFAULT}" -eq "xsaved") {
 # $env:GRUB_OS_PROBER_SKIP_LIST
 # $env:GRUB_DISABLE_SUBMENU
 
-if("x${grub_cfg}" -ne "x") {
+if ("x${grub_cfg}" -ne "x") {
   $cfg_new = (& $MyInvocation.MyCommand.Path | Out-String)
   ($cfg_new | & ${grub_script_check}) > $null
-  if(-not $?) {
+  if (-not $?) {
     $cfg_new > "${grub_cfg}.new"
     # TRANSLATORS: {0} is replaced by filename
     gettext_printf @"
@@ -322,14 +322,14 @@ Write-Output @"
 "@
 
 
-foreach($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
+foreach ($i in Get-ChildItem -Path "${grub_mkconfig_dir}") {
   switch -Wildcard ($i) {
     # emacsen backup files. FIXME: support other editors
     "*~" {}
     # emacsen backup files. FIXME: support other editors
     "*/#*#" {}
     default {
-      if((grub_file_is_not_garbage $i.FullName) -eq 0 -and (Test-Path $i.FullName -PathType Leaf)) {
+      if ((grub_file_is_not_garbage $i.FullName) -eq 0 -and (Test-Path $i.FullName -PathType Leaf)) {
         Write-Output ""
         Write-Output "### BEGIN $i ###"
         & $i.FullName

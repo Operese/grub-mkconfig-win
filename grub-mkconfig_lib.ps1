@@ -34,7 +34,7 @@ if ("x$grub_file" -eq "x") {
   $grub_file = "${bindir}/$env:grub_file"
 }
 if ("x$grub_mkrelpath" -eq "x") {
-  $grub_mkrelpath="${bindir}/$env:grub_mkrelpath"
+  $grub_mkrelpath = "${bindir}/$env:grub_mkrelpath"
 }
 
 if (-not (Get-Command gettext -ErrorAction SilentlyContinue > $null)) {
@@ -58,7 +58,7 @@ function make_system_path_relative_to_its_root {
 }
 
 function is_path_readable_by_grub {
-  $path=$args[0]
+  $path = $args[0]
 
   # abort if path doesn't exist
   if (-not (Test-Path "$path" -PathType Leaf)) {
@@ -92,7 +92,7 @@ function is_path_readable_by_grub {
 }
 
 function convert_system_path_to_grub_path {
-  $path=$args[0]
+  $path = $args[0]
 
   grub_warn "convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead."
 
@@ -163,7 +163,7 @@ function prepare_grub_to_access_device {
   }
   $fs_uuid = (& ${grub_probe} --device $args --target=fs_uuid 2> $null)
   if ("x${env:GRUB_DISABLE_UUID}" -ne "xtrue" -and $fs_uuid) {
-    $hints=(& ${grub_probe} --device $args --target=hints_string 2> $null)
+    $hints = (& ${grub_probe} --device $args --target=hints_string 2> $null)
     if ("x$hints" -ne "x") {
       Write-Output "if [ x`$feature_platform_search_hint = xy ]; then"
       Write-Output "  search --no-floppy --fs-uuid --set=root ${hints} ${fs_uuid}"
@@ -224,25 +224,24 @@ function version_sort {
 # Given an item as the first argument and a list as the subsequent arguments,
 # returns the list with the first argument moved to the front if it exists in
 # the list.
-function grub_move_to_front
-{
-  $item=$args[0]
+function grub_move_to_front {
+  $item = $args[0]
 
-  $item_found=$false
-  foreach($i in $args[1..($args.Length - 1)]) {
-  if("x$i" -eq "x$item") {
-  $item_found=$true
-  }
+  $item_found = $false
+  foreach ($i in $args[1..($args.Length - 1)]) {
+    if ("x$i" -eq "x$item") {
+      $item_found = $true
+    }
   }
 
-  if("x$item_found" -eq "xtrue") {
-  Write-Output "$item"
+  if ("x$item_found" -eq "xtrue") {
+    Write-Output "$item"
   }
-  foreach($i in $args[1..($args.Length - 1)]) {
-  if("x$i" -eq "x$item") {
-    continue
-  }
-  Write-Output "$i"
+  foreach ($i in $args[1..($args.Length - 1)]) {
+    if ("x$i" -eq "x$item") {
+      continue
+    }
+    Write-Output "$i"
   }
 }
 
@@ -260,17 +259,17 @@ function gettext_quoted {
 # remaining arguments to printf.  This is a useful abbreviation and tends to
 # be easier to type.
 function gettext_printf {
-  $gettext_printf_format=$args[0]
-  $gettext_printf_args=$args[1..($args.Length - 1)]
+  $gettext_printf_format = $args[0]
+  $gettext_printf_args = $args[1..($args.Length - 1)]
   printf "$(gettext "$gettext_printf_format")" @gettext_printf_args
 }
 
 function uses_abstraction {
-  $device=$args[0]
+  $device = $args[0]
 
-  $abstraction=(& ${grub_probe} --device ${device} --target=abstraction)
-  foreach($module in ${abstraction} -split "`n") {
-    if("x${module}" -eq "x$($args[1])") {
+  $abstraction = (& ${grub_probe} --device ${device} --target=abstraction)
+  foreach ($module in ${abstraction} -split "`n") {
+    if ("x${module}" -eq "x$($args[1])") {
       return 0
     }
   }
@@ -278,48 +277,49 @@ function uses_abstraction {
 }
 
 function print_option_help {
-  if("x$print_option_help_wc" -eq "x") {
-    $print_option_help_wc="-L"
+  if ("x$print_option_help_wc" -eq "x") {
+    $print_option_help_wc = "-L"
   }
-  if("x$grub_have_fmt" -eq "x") {
-  $grub_have_fmt="y";
-}
-  $print_option_help_lead="  $($args[0])"
-  $print_option_help_lspace="$(($print_option_help_lead -split "`n" | Measure-Object -Property Length -Maximum).Maximum)"
-  $print_option_help_fill="$((26 - $print_option_help_lspace))"
+  if ("x$grub_have_fmt" -eq "x") {
+    $grub_have_fmt = "y";
+  }
+  $print_option_help_lead = "  $($args[0])"
+  $print_option_help_lspace = "$(($print_option_help_lead -split "`n" | Measure-Object -Property Length -Maximum).Maximum)"
+  $print_option_help_fill = "$((26 - $print_option_help_lspace))"
   printf "{0}" "$print_option_help_lead"
-  if($print_option_help_fill -le 0) {
-  $print_option_help_nl=y
-  Write-Output ""
+  if ($print_option_help_fill -le 0) {
+    $print_option_help_nl = y
+    Write-Output ""
   }
   else {
-  $print_option_help_i=0;
-  while($print_option_help_i -lt $print_option_help_fill) {
-  printf " "
-  $print_option_help_i++
+    $print_option_help_i = 0;
+    while ($print_option_help_i -lt $print_option_help_fill) {
+      printf " "
+      $print_option_help_i++
+    }
+    $print_option_help_nl = "n"
   }
-  $print_option_help_nl="n"
-  }
-  if("x$grub_have_fmt" -eq "xy") {
-  $print_option_help_split="$(($args[1]  -split '(.{1,50})(?:\s+|$)' -join "`n").Trim())"
+  if ("x$grub_have_fmt" -eq "xy") {
+    $print_option_help_split = "$(($args[1]  -split '(.{1,50})(?:\s+|$)' -join "`n").Trim())"
   }
   else {
-  $print_option_help_split=$args[1]
+    $print_option_help_split = $args[1]
   }
-  if("x$print_option_help_nl" -eq "xy") {
+  if ("x$print_option_help_nl" -eq "xy") {
     $print_option_help_split | ForEach-Object {
       "                          $_"
-  }  
+    }  
   }
   else {
     $print_option_help_split | ForEach-Object -Begin { $n = 0 } -Process {
       if ($n -eq 1) {
-          "                          $_"
-      } else {
-          $_
+        "                          $_"
+      }
+      else {
+        $_
       }
       $n = 1
-  }
+    }
   
   }
 }
@@ -328,7 +328,7 @@ function grub_fmt {
   ($args[0] -split '(.{1,40})(?:\s+|$)' -join "`n").Trim()
 }
 
-$grub_tab="	"
+$grub_tab = "	"
 
 function grub_add_tab {
   $args[0] -replace "^", $grub_tab

@@ -1,5 +1,5 @@
-$ErrorActionPreference="Stop"
-$InformationPreference="Continue"
+$ErrorActionPreference = "Stop"
+$InformationPreference = "Continue"
 
 # grub-mkconfig helper script.
 # Copyright (C) 2020  Free Software Foundation, Inc.
@@ -19,16 +19,16 @@ $InformationPreference="Continue"
 
 . "${env:pkgdatadir}/env-def.ps1"
 
-$prefix="$env:prefix"
-$exec_prefix="$env:exec_prefix"
-$datarootdir="$env:datarootdir"
+$prefix = "$env:prefix"
+$exec_prefix = "$env:exec_prefix"
+$datarootdir = "$env:datarootdir"
 
-$env:TEXTDOMAIN="$env:PACKAGE"
-$env:TEXTDOMAINDIR="$env:localedir"
+$env:TEXTDOMAIN = "$env:PACKAGE"
+$env:TEXTDOMAINDIR = "$env:localedir"
 
 . "$env:pkgdatadir/grub-mkconfig_lib.ps1"
 
-$LABEL="UEFI Firmware Settings"
+$LABEL = "UEFI Firmware Settings"
 
 gettext_printf "Adding boot menu entry for UEFI Firmware Settings ...`n"
 
