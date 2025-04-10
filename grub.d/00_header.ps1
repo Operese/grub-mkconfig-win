@@ -312,36 +312,36 @@ function make_timeout {
       style="countdown"
       verbose=" --verbose"
     }
-    else {
-      # No hidden timeout, so treat as GRUB_TIMEOUT_STYLE=menu
-      $timeout = $args[1]
-      $style = "menu"
-    }
-    Write-Output @"
+  }
+  else {
+    # No hidden timeout, so treat as GRUB_TIMEOUT_STYLE=menu
+    $timeout = $args[1]
+    $style = "menu"
+  }
+  Write-Output @"
 if [ x`$feature_timeout_style = xy ] ; then
   set timeout_style=${style}
   set timeout=${timeout}
 "@
-    if ("x${style}" -eq "xmenu") {
-      Write-Output @"
+  if ("x${style}" -eq "xmenu") {
+    Write-Output @"
 # Fallback normal timeout code in case the timeout_style feature is
 # unavailable.
 else
   set timeout=${timeout}
 "@
-    }
-    else {
-      Write-Output @"
+  }
+  else {
+    Write-Output @"
 # Fallback hidden-timeout code in case the timeout_style feature is
 # unavailable.
 elif sleep${verbose} --interruptible ${timeout} ; then
   set timeout=0
 "@
-    }
-    Write-Output @"
+  }
+  Write-Output @"
 fi
 "@
-  }
 }
 
 if ("x$env:GRUB_BUTTON_CMOS_ADDRESS" -ne "x") {
@@ -352,7 +352,8 @@ if cmostest $env:GRUB_BUTTON_CMOS_ADDRESS ; then
   Write-Output "else"
   make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
   Write-Output "fi"
-  else
+}
+else {
   make_timeout "${env:GRUB_HIDDEN_TIMEOUT}" "${env:GRUB_TIMEOUT}" "${env:GRUB_TIMEOUT_STYLE}"
 }
 
