@@ -294,7 +294,7 @@ and /etc/grub.d/* files or please file a bug report with
   }
   else {
     # none of the children aborted with error, install the new grub.cfg
-    New-Item -ItemType File -Name "${grub_cfg}" -ErrorAction SilentlyContinue > $null
+    New-Item -ItemType File -Path $(Split-Path -Path ${grub_cfg} -Parent) -Name $(Split-Path -Path ${grub_cfg} -Leaf) -ErrorAction SilentlyContinue > $null
     $acl = New-Object System.Security.AccessControl.FileSecurity
     $acl.SetAccessRuleProtection($true, $false)
     $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule("SYSTEM", "FullControl", "Allow")
